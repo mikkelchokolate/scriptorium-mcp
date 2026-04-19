@@ -1124,18 +1124,6 @@ function installEvents() {
   });
 }
 
-function installRevealObserver() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("is-visible");
-      }
-    });
-  }, { threshold: 0.16 });
-
-  document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
-}
-
 function startTicker() {
   window.setInterval(() => {
     const events = getDictionary().hero.events;
@@ -1146,6 +1134,5 @@ function startTicker() {
 }
 
 installEvents();
-installRevealObserver();
 render();
 startTicker();
