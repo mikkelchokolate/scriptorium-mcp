@@ -6,7 +6,7 @@ const graphNodes = [
     id: "atlas",
     kind: "atlas",
     heroPosition: { x: 50, y: 30 },
-    panelPosition: { x: 50, y: 24 },
+    panelPosition: { x: 50, y: 31 },
     heroTilt: -1,
     panelTilt: 0,
     labels: {
@@ -40,7 +40,7 @@ const graphNodes = [
     id: "bible",
     kind: "core",
     heroPosition: { x: 20, y: 18 },
-    panelPosition: { x: 20, y: 18 },
+    panelPosition: { x: 20, y: 25 },
     heroTilt: -4,
     panelTilt: -5,
     labels: {
@@ -74,7 +74,7 @@ const graphNodes = [
     id: "cast",
     kind: "core",
     heroPosition: { x: 79, y: 18 },
-    panelPosition: { x: 78, y: 18 },
+    panelPosition: { x: 78, y: 25 },
     heroTilt: 3,
     panelTilt: 4,
     labels: {
@@ -108,7 +108,7 @@ const graphNodes = [
     id: "chapters",
     kind: "graph",
     heroPosition: { x: 22, y: 55 },
-    panelPosition: { x: 18, y: 52 },
+    panelPosition: { x: 18, y: 59 },
     heroTilt: 2,
     panelTilt: 3,
     labels: {
@@ -142,7 +142,7 @@ const graphNodes = [
     id: "lore",
     kind: "graph",
     heroPosition: { x: 80, y: 54 },
-    panelPosition: { x: 80, y: 52 },
+    panelPosition: { x: 80, y: 59 },
     heroTilt: -3,
     panelTilt: -4,
     labels: {
@@ -176,7 +176,7 @@ const graphNodes = [
     id: "temporal",
     kind: "temporal",
     heroPosition: { x: 33, y: 83 },
-    panelPosition: { x: 30, y: 82 },
+    panelPosition: { x: 30, y: 89 },
     heroTilt: -2,
     panelTilt: -3,
     labels: {
@@ -210,7 +210,7 @@ const graphNodes = [
     id: "forecast",
     kind: "forecast",
     heroPosition: { x: 67, y: 83 },
-    panelPosition: { x: 69, y: 82 },
+    panelPosition: { x: 69, y: 89 },
     heroTilt: 3,
     panelTilt: 2,
     labels: {
@@ -862,14 +862,16 @@ function renderHero(dict) {
   elements.visualFooter.textContent = dict.hero.visualFooter;
   elements.insightEyebrow.textContent = dict.hero.insightEyebrow;
 
-  elements.heroStats.innerHTML = dict.hero.stats
-    .map(([value, label]) => `
-      <article class="stat-card">
-        <strong>${escapeHtml(value)}</strong>
-        <span>${escapeHtml(label)}</span>
-      </article>
-    `)
-    .join("");
+  if (elements.heroStats) {
+    elements.heroStats.innerHTML = dict.hero.stats
+      .map(([value, label]) => `
+        <article class="stat-card">
+          <strong>${escapeHtml(value)}</strong>
+          <span>${escapeHtml(label)}</span>
+        </article>
+      `)
+      .join("");
+  }
 
   renderNodes(elements.heroNodeLayer, "hero");
   renderForecastStrip(elements.heroForecastStrip, dict.hero.forecast);
