@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Scriptorium MCP | Narrative Graph Platform</title>
+    <title>Scriptorium MCP | Writing Studio for Living Books</title>
     <meta
       name="description"
-      content="Enterprise-grade public showcase for Scriptorium MCP: file-first writing workspace, live graph exploration, temporal reasoning, causal forecasting, and bilingual UX."
+      content="Editorial Atelier showcase for Scriptorium MCP: a file-first writing studio with a living world bible, chapter map, cast ledger, multilingual graph explorer, and continuity forecasting."
     >
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     >
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -63,13 +63,14 @@
 
             <div class="network-board network-board--hero">
               <svg class="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                <line x1="42" y1="34" x2="18" y2="22"></line>
-                <line x1="42" y1="34" x2="76" y2="20"></line>
-                <line x1="42" y1="34" x2="18" y2="68"></line>
-                <line x1="42" y1="34" x2="74" y2="66"></line>
-                <line x1="42" y1="34" x2="49" y2="84"></line>
-                <line x1="76" y1="20" x2="87" y2="45"></line>
-                <line x1="74" y1="66" x2="87" y2="45"></line>
+                <line x1="50" y1="30" x2="20" y2="18"></line>
+                <line x1="50" y1="30" x2="79" y2="18"></line>
+                <line x1="50" y1="30" x2="22" y2="55"></line>
+                <line x1="50" y1="30" x2="80" y2="54"></line>
+                <line x1="50" y1="30" x2="33" y2="83"></line>
+                <line x1="50" y1="30" x2="67" y2="83"></line>
+                <line x1="22" y1="55" x2="33" y2="83"></line>
+                <line x1="80" y1="54" x2="67" y2="83"></line>
               </svg>
               <div class="node-layer" id="hero-node-layer"></div>
             </div>
@@ -112,24 +113,20 @@
                 <h3 id="graph-panel-title"></h3>
                 <p id="graph-panel-copy"></p>
               </div>
-              <div class="panel-badges">
-                <span class="pill">React Flow</span>
-                <span class="pill">HTTP Snapshot</span>
-                <span class="pill">WebSocket Delta</span>
-              </div>
+              <div class="panel-badges" id="graph-badges"></div>
             </div>
 
             <div class="graph-showcase">
               <div class="network-board network-board--detail">
                 <svg class="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="48" y1="28" x2="20" y2="18"></line>
-                  <line x1="48" y1="28" x2="76" y2="20"></line>
-                  <line x1="48" y1="28" x2="18" y2="52"></line>
-                  <line x1="48" y1="28" x2="78" y2="52"></line>
-                  <line x1="48" y1="28" x2="30" y2="80"></line>
-                  <line x1="48" y1="28" x2="67" y2="82"></line>
-                  <line x1="76" y1="20" x2="88" y2="40"></line>
-                  <line x1="78" y1="52" x2="88" y2="40"></line>
+                  <line x1="50" y1="24" x2="20" y2="18"></line>
+                  <line x1="50" y1="24" x2="78" y2="18"></line>
+                  <line x1="50" y1="24" x2="18" y2="52"></line>
+                  <line x1="50" y1="24" x2="80" y2="52"></line>
+                  <line x1="50" y1="24" x2="30" y2="82"></line>
+                  <line x1="50" y1="24" x2="69" y2="82"></line>
+                  <line x1="18" y1="52" x2="30" y2="82"></line>
+                  <line x1="80" y1="52" x2="69" y2="82"></line>
                 </svg>
                 <div class="node-layer" id="graph-node-layer"></div>
               </div>
@@ -150,11 +147,7 @@
                 <h3 id="forecast-panel-title"></h3>
                 <p id="forecast-panel-copy"></p>
               </div>
-              <div class="panel-badges">
-                <span class="pill">Temporal</span>
-                <span class="pill">Causal</span>
-                <span class="pill">10 Chapters</span>
-              </div>
+              <div class="panel-badges" id="forecast-badges"></div>
             </div>
 
             <div class="forecast-layout">
@@ -172,11 +165,7 @@
                 <h3 id="runtime-panel-title"></h3>
                 <p id="runtime-panel-copy"></p>
               </div>
-              <div class="panel-badges">
-                <span class="pill">File-first</span>
-                <span class="pill">Optional Neo4j</span>
-                <span class="pill">Bilingual</span>
-              </div>
+              <div class="panel-badges" id="runtime-badges"></div>
             </div>
 
             <div class="runtime-layout">

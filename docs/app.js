@@ -1,35 +1,36 @@
 const repoUrl = "https://github.com/mikkelchokolate/scriptorium-mcp";
-const pagesUrl = "https://mikkelchokolate.github.io/scriptorium-mcp/";
 
 const graphNodes = [
   {
-    id: "project",
-    kind: "core",
-    heroPosition: { x: 42, y: 34 },
-    panelPosition: { x: 48, y: 28 },
+    id: "atlas",
+    kind: "atlas",
+    heroPosition: { x: 50, y: 30 },
+    panelPosition: { x: 50, y: 24 },
+    heroTilt: -1,
+    panelTilt: 0,
     labels: {
       en: {
-        title: "Project Core",
-        kind: "canonical",
-        summary: "File-backed source of truth for world, outline, chapters, and characters.",
+        title: "Story Atlas",
+        chip: "live explorer",
+        summary: "A browser desk for world memory, chapter links, and continuity signals.",
         description:
-          "Every authoring surface resolves back to canonical project files before graph enrichment happens.",
+          "The live explorer gives authors a working map of the book: characters, lore facts, chapter anchors, and forecast clues in one place.",
         metrics: [
-          ["Storage", "projects/"],
-          ["Sync policy", "file-first"],
-          ["Mode", "safe public repo"],
+          ["Surface", "Next.js + React Flow"],
+          ["Live feed", "HTTP + WebSocket"],
+          ["Audience", "writer and editor"],
         ],
       },
       ru: {
-        title: "Ядро проекта",
-        kind: "канон",
-        summary: "Файловый источник истины для мира, плана, глав и персонажей.",
+        title: "Story Atlas",
+        chip: "live explorer",
+        summary: "Браузерный стол для памяти мира, связей глав и сигналов непрерывности.",
         description:
-          "Любая авторская операция сначала пишет канонические файлы проекта, а уже потом графовый слой строит производные представления.",
+          "Live explorer даёт автору рабочую карту книги: персонажи, факты лора, опоры глав и сигналы прогноза в одном месте.",
         metrics: [
-          ["Хранилище", "projects/"],
-          ["Синхронизация", "file-first"],
-          ["Режим", "безопасная публикация"],
+          ["Поверхность", "Next.js + React Flow"],
+          ["Live feed", "HTTP + WebSocket"],
+          ["Для кого", "автор и редактор"],
         ],
       },
     },
@@ -37,95 +38,67 @@ const graphNodes = [
   {
     id: "bible",
     kind: "core",
-    heroPosition: { x: 18, y: 22 },
+    heroPosition: { x: 20, y: 18 },
     panelPosition: { x: 20, y: 18 },
+    heroTilt: -4,
+    panelTilt: -5,
     labels: {
       en: {
         title: "World Bible",
-        kind: "knowledge",
-        summary: "Structured long-form context for locations, factions, systems, and rules.",
+        chip: "living folio",
+        summary: "Canonical lore, locations, systems, factions, and rules stay readable in Markdown.",
         description:
-          "Writers keep the living bible readable in Markdown while graph projection turns it into connected knowledge.",
+          "Scriptorium keeps the living bible author-friendly while the graph layer turns it into connected, queryable knowledge.",
         metrics: [
-          ["Format", "world_bible.md"],
-          ["Audience", "author + tools"],
-          ["Scope", "setting memory"],
+          ["Canonical file", "world_bible.md"],
+          ["Writer value", "clear world memory"],
+          ["Graph use", "entity projection"],
         ],
       },
       ru: {
-        title: "Библия мира",
-        kind: "знание",
-        summary: "Структурный контекст для локаций, фракций, систем и правил.",
+        title: "World Bible",
+        chip: "живое досье",
+        summary: "Канонический лор, локации, системы, фракции и правила остаются читаемыми в Markdown.",
         description:
-          "Автор хранит живую базу знаний в Markdown, а графовая проекция превращает её в связанную модель мира.",
+          "Scriptorium оставляет живую библию мира удобной для автора, а графовый слой превращает её в связанную и запросную модель знаний.",
         metrics: [
-          ["Формат", "world_bible.md"],
-          ["Пользователи", "автор + инструменты"],
-          ["Охват", "память мира"],
+          ["Канон", "world_bible.md"],
+          ["Ценность", "память мира"],
+          ["Для графа", "проекция сущностей"],
         ],
       },
     },
   },
   {
-    id: "characters",
+    id: "cast",
     kind: "core",
-    heroPosition: { x: 76, y: 20 },
-    panelPosition: { x: 76, y: 20 },
+    heroPosition: { x: 79, y: 18 },
+    panelPosition: { x: 78, y: 18 },
+    heroTilt: 3,
+    panelTilt: 4,
     labels: {
       en: {
-        title: "Character Forge",
-        kind: "roster",
-        summary: "Profiles, arcs, and state transitions remain queryable from both files and graph.",
+        title: "Cast Ledger",
+        chip: "character arcs",
+        summary: "Profiles, motivations, and arc movement remain visible chapter by chapter.",
         description:
-          "Character records map cleanly into graph nodes, chapter spans, and future continuity checks.",
+          "Character records stay grounded in files but can light up the graph when continuity, relationships, or future risk need inspection.",
         metrics: [
           ["Index", "characters/index.json"],
-          ["Arc tracking", "yes"],
-          ["Explorer tag", "character"],
+          ["Arc tracking", "enabled"],
+          ["Explorer role", "character nodes"],
         ],
       },
       ru: {
-        title: "Панель персонажей",
-        kind: "ростер",
-        summary: "Профили, арки и смена состояния доступны и из файлов, и из графа.",
+        title: "Cast Ledger",
+        chip: "арки персонажей",
+        summary: "Профили, мотивации и движение арок видны по главам.",
         description:
-          "Записи персонажей естественно маппятся в графовые узлы, диапазоны глав и будущие проверки непрерывности.",
+          "Записи персонажей живут в файлах, но при необходимости подсвечивают граф для проверки непрерывности, отношений и будущих рисков.",
         metrics: [
           ["Индекс", "characters/index.json"],
-          ["Отслеживание арки", "да"],
-          ["Тег в explorer", "character"],
-        ],
-      },
-    },
-  },
-  {
-    id: "outline",
-    kind: "graph",
-    heroPosition: { x: 18, y: 68 },
-    panelPosition: { x: 18, y: 52 },
-    labels: {
-      en: {
-        title: "Story Architect",
-        kind: "outline",
-        summary: "Open beats and unresolved arcs feed the forecast engine.",
-        description:
-          "Outline data becomes a structural signal, helping the system surface dangling arcs before they ship into chapters.",
-        metrics: [
-          ["Format", "outline.json"],
-          ["Forecast use", "open beats"],
-          ["Risk type", "orphaned arc"],
-        ],
-      },
-      ru: {
-        title: "Story Architect",
-        kind: "план",
-        summary: "Незавершённые биты и открытые арки питают прогнозную логику.",
-        description:
-          "Данные плана становятся структурным сигналом и помогают заранее замечать висящие линии до того, как они попадут в главы.",
-        metrics: [
-          ["Формат", "outline.json"],
-          ["Для прогноза", "открытые биты"],
-          ["Тип риска", "висящая арка"],
+          ["Трекинг арок", "включён"],
+          ["В explorer", "узлы персонажей"],
         ],
       },
     },
@@ -133,31 +106,67 @@ const graphNodes = [
   {
     id: "chapters",
     kind: "graph",
-    heroPosition: { x: 74, y: 66 },
-    panelPosition: { x: 78, y: 52 },
+    heroPosition: { x: 22, y: 55 },
+    panelPosition: { x: 18, y: 52 },
+    heroTilt: 2,
+    panelTilt: 3,
     labels: {
       en: {
-        title: "Chapter Stream",
-        kind: "timeline",
-        summary: "Chapter markdown turns into temporal anchors, dependencies, and continuity checkpoints.",
+        title: "Chapter Map",
+        chip: "manuscript flow",
+        summary: "Chapter markdown becomes a readable map of progression, anchors, and narrative pressure.",
         description:
-          "The browser explorer can highlight impacted chapter windows and link risks back to concrete manuscript territory.",
+          "The system can tie forecasted risk back to concrete chapter windows instead of leaving authors with abstract warnings.",
         metrics: [
           ["Source", "chapters/*.md"],
           ["Temporal anchors", "yes"],
-          ["Forecast window", "+10 chapters"],
+          ["Risk link", "chapter windows"],
         ],
       },
       ru: {
-        title: "Поток глав",
-        kind: "таймлайн",
-        summary: "Markdown-главы превращаются во временные опоры, зависимости и контрольные точки.",
+        title: "Chapter Map",
+        chip: "поток рукописи",
+        summary: "Markdown-главы превращаются в читаемую карту развития, опор и narrative pressure.",
         description:
-          "Браузерный explorer подсвечивает затронутые окна глав и связывает риски с конкретными участками рукописи.",
+          "Система связывает прогнозируемый риск с конкретными окнами глав, а не оставляет автора с абстрактными предупреждениями.",
         metrics: [
           ["Источник", "chapters/*.md"],
           ["Временные опоры", "да"],
-          ["Окно прогноза", "+10 глав"],
+          ["Связь риска", "окна глав"],
+        ],
+      },
+    },
+  },
+  {
+    id: "lore",
+    kind: "graph",
+    heroPosition: { x: 80, y: 54 },
+    panelPosition: { x: 80, y: 52 },
+    heroTilt: -3,
+    panelTilt: -4,
+    labels: {
+      en: {
+        title: "Lore Registry",
+        chip: "consistency facts",
+        summary: "Registered facts are no longer just notes. They become continuity material.",
+        description:
+          "Lore Guardian can use these facts for timeline checks, contradictions, foreshadowing windows, and graph enrichment.",
+        metrics: [
+          ["Tool", "lore_guardian"],
+          ["Storage", "lore_facts.json"],
+          ["Checks", "timeline + contradiction"],
+        ],
+      },
+      ru: {
+        title: "Lore Registry",
+        chip: "факты консистентности",
+        summary: "Зарегистрированные факты перестают быть просто заметками. Они становятся материалом для непрерывности.",
+        description:
+          "Lore Guardian использует эти факты для таймлайна, противоречий, окон foreshadowing и графового обогащения.",
+        metrics: [
+          ["Инструмент", "lore_guardian"],
+          ["Хранилище", "lore_facts.json"],
+          ["Проверки", "таймлайн + противоречия"],
         ],
       },
     },
@@ -165,31 +174,33 @@ const graphNodes = [
   {
     id: "temporal",
     kind: "temporal",
-    heroPosition: { x: 49, y: 84 },
-    panelPosition: { x: 30, y: 80 },
+    heroPosition: { x: 33, y: 83 },
+    panelPosition: { x: 30, y: 82 },
+    heroTilt: -2,
+    panelTilt: -3,
     labels: {
       en: {
-        title: "Temporal Layer",
-        kind: "temporal",
-        summary: "Localized temporal fields carry start, end, duration, and chapter spans.",
+        title: "Temporal Spine",
+        chip: "story time",
+        summary: "Start, end, duration, and chapter spans turn the manuscript into a time-aware system.",
         description:
-          "The graph reasoner can detect timeline gaps, impossible intervals, and unresolved foreshadowing windows.",
+          "The temporal layer surfaces gaps, impossible intervals, and low-anchor zones before continuity drift spreads through the draft.",
         metrics: [
           ["Fields", "start / end / duration"],
-          ["Locale aware", "en + ru"],
-          ["Checks", "gaps + drift"],
+          ["Scope", "chapter spans"],
+          ["Writer outcome", "fewer timeline slips"],
         ],
       },
       ru: {
-        title: "Временной слой",
-        kind: "время",
-        summary: "Локализованные temporal-поля хранят start, end, duration и диапазоны глав.",
+        title: "Temporal Spine",
+        chip: "время истории",
+        summary: "Start, end, duration и диапазоны глав делают рукопись временем-чувствительной системой.",
         description:
-          "Графовый reasoner умеет находить пробелы таймлайна, невозможные интервалы и незакрытые окна предвосхищения.",
+          "Temporal-слой находит пробелы, невозможные интервалы и зоны с нехваткой опор до того, как drift разойдётся по тексту.",
         metrics: [
           ["Поля", "start / end / duration"],
-          ["Локали", "en + ru"],
-          ["Проверки", "пробелы + drift"],
+          ["Охват", "диапазоны глав"],
+          ["Результат", "меньше ошибок таймлайна"],
         ],
       },
     },
@@ -197,30 +208,32 @@ const graphNodes = [
   {
     id: "forecast",
     kind: "forecast",
-    heroPosition: { x: 87, y: 45 },
-    panelPosition: { x: 88, y: 40 },
+    heroPosition: { x: 67, y: 83 },
+    panelPosition: { x: 69, y: 82 },
+    heroTilt: 3,
+    panelTilt: 2,
     labels: {
       en: {
-        title: "Risk Horizon",
-        kind: "forecast",
-        summary: "Temporal + causal reasoning highlights plot-hole risk before it hits the manuscript.",
+        title: "Continuity Horizon",
+        chip: "forecast desk",
+        summary: "Temporal and causal reasoning point at what may break ten chapters from now.",
         description:
-          "Forecast cards explain confidence, impacted chapters, evidence, and remediation patterns rather than giving opaque scores.",
+          "Forecast cards stay explainable: confidence, impacted chapters, evidence, and likely remediation patterns.",
         metrics: [
-          ["Horizon", "10 chapters"],
-          ["Signals", "causal + temporal"],
+          ["Window", "10 chapters"],
+          ["Signals", "temporal + causal"],
           ["Output", "explainable risk cards"],
         ],
       },
       ru: {
-        title: "Горизонт рисков",
-        kind: "прогноз",
-        summary: "Temporal + causal reasoning подсвечивает plot holes ещё до рукописи.",
+        title: "Continuity Horizon",
+        chip: "стол прогноза",
+        summary: "Temporal и causal reasoning показывают, что может сломаться через десять глав.",
         description:
-          "Карточки прогноза показывают уверенность, затронутые главы, доказательства и способ исправления, а не только голую оценку.",
+          "Карточки прогноза остаются объяснимыми: confidence, затронутые главы, evidence и вероятные способы исправления.",
         metrics: [
-          ["Горизонт", "10 глав"],
-          ["Сигналы", "causal + temporal"],
+          ["Окно", "10 глав"],
+          ["Сигналы", "temporal + causal"],
           ["Выход", "объяснимые risk cards"],
         ],
       },
@@ -230,458 +243,468 @@ const graphNodes = [
 
 const dictionaries = {
   en: {
-    brandTagline: "Public product showcase",
+    pageTitle: "Scriptorium MCP | Writing Studio for Living Books",
+    brandTagline: "Editorial Atelier",
     repoButton: "Repository",
     nav: [
       ["overview", "Overview"],
-      ["showcase", "Showcase"],
+      ["showcase", "Studio"],
       ["tools", "Tools"],
       ["architecture", "Architecture"],
       ["launch", "Launch"],
     ],
     hero: {
-      eyebrow: "Enterprise-grade narrative infrastructure",
-      title: "Scriptorium MCP turns writing projects into a living graph platform.",
+      eyebrow: "Writing workspace for living book projects",
+      title: "Keep your world bible, cast, chapters, and continuity in one working studio.",
       copy:
-        "A file-first MCP workspace for serious fiction systems: structured worldbuilding, chapter orchestration, bilingual graph exploration, temporal modeling, and explainable plot-hole forecasting up to ten chapters ahead.",
+        "Scriptorium MCP is a file-first workspace for novels and long-form book projects. Build the world, track the cast, shape chapters, inspect a living story graph, and catch continuity risk before it hardens into the manuscript.",
       primary: "Open GitHub Repository",
-      secondary: "Explore the Product Surface",
-      visualEyebrow: "Live platform surface",
-      visualStatus: "PUBLIC REPOSITORY",
+      secondary: "Walk the Studio",
+      visualEyebrow: "Desk view",
+      visualStatus: "Pages showcase live",
       visualFooter:
-        "This GitHub Pages site is a polished static walkthrough of the real Scriptorium runtime: the live explorer connects to the Graph API and WebSocket layer locally or on your own host.",
-      insightEyebrow: "Forecast pulse",
+        "This public site is the editorial front door. The real explorer still runs against the repository's graph API and WebSocket layer.",
+      insightEyebrow: "Continuity pulse",
       stats: [
-        ["12", "Core MCP tools covering project setup, worldbuilding, outlining, prose, research, QA, and plugins."],
-        ["HTTP + WS", "Dedicated graph delivery surface for browser clients, snapshots, and live delta streams."],
-        ["RU / EN", "Localized browser chrome, graph labels, and forecast summaries from the same canonical model."],
-        ["+10", "Bounded forecast horizon for temporal and causal continuity risk detection."],
+        ["World Bible", "A canonical folio for setting memory, rules, factions, themes, and story context."],
+        ["Story Atlas", "A browser map of characters, lore facts, chapter anchors, and relationship lines."],
+        ["RU / EN", "One canonical model rendered in English and Russian across UI, graph labels, and forecasts."],
+        ["10 chapters", "A bounded continuity horizon for temporal and causal plot-risk detection."],
       ],
-      heroEvents: [
-        ["graph.node.upserted", "Character arc updated after a chapter write."],
-        ["graph.timeline.updated", "Temporal anchors recomputed from current manuscript state."],
-        ["graph.forecast.updated", "Future continuity window refreshed for the next ten chapters."],
-        ["graph.connected", "Web client synchronized with current project snapshot."],
-        ["graph.snapshot.ready", "Initial graph projection delivered to the explorer."],
+      events: [
+        ["character_forger", "A character arc moved after a new chapter draft landed."],
+        ["graph.timeline.updated", "Fresh temporal anchors were inferred from the current manuscript state."],
+        ["lore_guardian", "A new lore fact entered the registry and became continuity material."],
+        ["graph.forecast.updated", "The next ten chapters were rescored for continuity risk."],
+        ["story_architect", "An outline beat changed and the structural pressure map refreshed."],
       ],
-      heroForecast: [
-        ["13", "info"],
-        ["14", "info"],
-        ["15", "warning"],
-        ["16", "warning"],
-        ["17", "critical"],
-        ["18", "info"],
-        ["19", "warning"],
+      forecast: [
+        ["11", "info"],
+        ["12", "info"],
+        ["13", "warning"],
+        ["14", "warning"],
+        ["15", "critical"],
+        ["16", "critical"],
+        ["17", "info"],
+        ["18", "warning"],
+        ["19", "info"],
         ["20", "warning"],
-        ["21", "info"],
-        ["22", "critical"],
       ],
     },
     overview: {
-      eyebrow: "Platform pillars",
-      title: "Built to stay readable for authors and powerful for systems.",
+      eyebrow: "What the studio gives a writer",
+      title: "Made for books, not generic dashboards.",
       copy:
-        "The public surface emphasizes real strengths from the repository: file-first safety, optional graph enrichment, multilingual presentation, and a browser story-map that stays grounded in canonical project artifacts.",
+        "The public showcase now frames Scriptorium as a serious writing product: a calm editorial surface on top of real project structure, live graph exploration, and continuity intelligence.",
       cards: [
-        ["01", "File-first core", "Projects remain canonical on disk, which makes publishing safe and keeps author workflows transparent."],
-        ["02", "Live graph explorer", "A dedicated Graph API and WebSocket stream let the browser inspect a living knowledge graph without mutating the authoring core."],
-        ["03", "Temporal + causal reasoning", "Forecast logic analyzes contradictions, timeline gaps, missing prerequisites, and unresolved foreshadowing windows."],
-        ["04", "Bilingual product surface", "English and Russian share one canonical model instead of duplicating entities across locales."],
+        ["I", "Living memory", "World rules, places, factions, and lore stay legible to the author while feeding the deeper graph layer."],
+        ["II", "Cast and arcs", "Characters are not isolated files. They become a working ledger of state, motive, and change."],
+        ["III", "Chapter awareness", "The manuscript is visible as chapter spans, anchors, and progression windows rather than a flat folder."],
+        ["IV", "Continuity watch", "Temporal and causal signals can warn about dropped setups, gaps, or abrupt turns before they hit readers."],
       ],
     },
     showcase: {
-      eyebrow: "Interactive product walkthrough",
-      title: "Three surfaces, one story system.",
+      eyebrow: "Studio walkthrough",
+      title: "Open the folio, inspect the story.",
       copy:
-        "Use the tabs to inspect the most important layers: the visual graph explorer, the temporal forecast horizon, and the delivery/runtime posture that keeps the stack explainable.",
+        "Each panel below reflects a real part of the product: the world and chapter atlas, the continuity desk, and the engine room that keeps the system honest.",
       tabs: {
-        graph: "Graph Explorer",
-        forecast: "Forecast Horizon",
-        runtime: "Runtime Model",
+        graph: "Writer's Atlas",
+        forecast: "Continuity Desk",
+        runtime: "Engine Room",
       },
-      graphTitle: "Visual Graph Explorer",
+      graphTitle: "Writer's Atlas",
       graphCopy:
-        "Writers can inspect the world as a living graph, search connected structures, and follow forecast signals back to concrete nodes and chapters.",
-      graphEventsTitle: "Live event stream",
-      forecastTitle: "Temporal Knowledge Graph + causal reasoning",
+        "The explorer feels like a working archive for the book: world bible, cast ledger, lore notes, chapter anchors, and future risk all remain navigable from the browser.",
+      graphBadges: ["World Bible", "Cast Ledger", "Chapter Links"],
+      graphEventsTitle: "Recent studio activity",
+      graphInspectorLabel: "Selected folio card",
+      forecastTitle: "Continuity Desk",
       forecastCopy:
-        "The forecast layer does not pretend to predict the future perfectly. It surfaces explainable risk with evidence, confidence, and impacted chapters so authors can decide what to fix.",
-      runtimeTitle: "Operational posture",
+        "Forecasting stays bounded and explainable. Instead of claiming certainty, Scriptorium points to the next places where setup, time, or causality may fail the manuscript.",
+      forecastBadges: ["Temporal", "Causal", "10-chapter window"],
+      runtimeTitle: "Engine Room",
       runtimeCopy:
-        "Scriptorium keeps the MCP authoring core lean while exposing a separate browser-facing graph service. The result is a clean public story for GitHub without sacrificing local author workflows.",
-      runtimeTreeTitle: "Canonical repository shape",
-      runtimeEndpointsTitle: "Delivery surface",
-      runtimeNotesTitle: "Why this deploys cleanly",
+        "The public site is polished and calm, but the underlying system remains explicit: file-first project storage, a separate graph service, optional Neo4j enrichment, and a clean deployment story.",
+      runtimeBadges: ["File-first", "Optional Neo4j", "GitHub Pages"],
+      runtimeTreeTitle: "Repository shape",
       runtimeTree: [
         "src/",
         "  backend/graph/",
         "  tools/",
         "web/",
         "docs/",
-        "projects/   # ignored locally",
+        "projects/   # local manuscripts stay ignored",
         "plugins/",
         "plans/",
       ],
+      runtimeEndpointsTitle: "Graph delivery surface",
       runtimeEndpoints: [
-        ["GET /api/capabilities", "Capability and graph-mode discovery."],
-        ["GET /api/projects", "Known workspace projects for the browser client."],
-        ["GET /api/projects/:project/graph", "Localized graph snapshot for the explorer."],
-        ["GET /api/projects/:project/graph/timeline", "Ordered temporal anchors and chapter context."],
-        ["GET /api/projects/:project/graph/forecast", "Explainable risk horizon with evidence and confidence."],
-        ["WS /ws/projects/:project/graph", "Live snapshot + delta stream for the active project."],
+        ["GET /api/capabilities", "Discover whether live graph, forecasting, and locales are available."],
+        ["GET /api/projects", "List known workspace projects for the browser desk."],
+        ["GET /api/projects/:project/graph", "Load a localized graph snapshot for the active book."],
+        ["GET /api/projects/:project/graph/timeline", "Read ordered chapter anchors and temporal context."],
+        ["GET /api/projects/:project/graph/forecast", "Inspect explainable risk cards for the next writing window."],
+        ["WS /ws/projects/:project/graph", "Stream live graph deltas into the browser desk."],
       ],
+      runtimeNotesTitle: "Why this public site works",
       runtimeNotes: [
-        ["Safe publishing", "The repository stays public while local manuscript data remains out of git via `.gitignore`."],
-        ["Static Pages, live product", "GitHub Pages hosts the polished public showcase while the real explorer runs against the project Graph API."],
-        ["Optional graph enrichment", "Neo4j remains additive; the project still works in pure file-backed mode."],
+        ["Book-safe repo posture", "Local manuscript directories remain excluded from git, so the public repository stays safe."],
+        ["Separate public front door", "GitHub Pages tells the product story without pretending to be the live runtime."],
+        ["Honest architecture", "The MCP core, graph service, browser explorer, and Pages showcase each keep a clear responsibility."],
       ],
       forecast: {
         chapters: [
-          ["13", "info"],
-          ["14", "warning"],
-          ["15", "warning"],
-          ["16", "critical"],
-          ["17", "critical"],
-          ["18", "info"],
-          ["19", "warning"],
-          ["20", "warning"],
-          ["21", "info"],
-          ["22", "critical"],
+          ["11", "info"],
+          ["12", "warning"],
+          ["13", "warning"],
+          ["14", "critical"],
+          ["15", "critical"],
+          ["16", "warning"],
+          ["17", "info"],
+          ["18", "warning"],
+          ["19", "info"],
+          ["20", "critical"],
         ],
         risks: [
           {
-            id: "foreshadowing-gap",
+            id: "payoff-gap",
             severity: "warning",
-            title: "Foreshadowed relic lacks payoff by chapter 16",
-            chapters: "14, 15, 16",
-            summary: "The graph sees setup but no visible resolution path yet.",
-            detailTitle: "Risk reasoning",
+            title: "A planted relic may reach chapter 14 without payoff",
+            chapters: "12, 13, 14",
+            summary: "The manuscript shows setup energy, but the graph still lacks a visible resolution path.",
+            detailTitle: "Why the desk is worried",
             details: [
-              ["Evidence", "A lore fact projects forward three chapters with no mirrored payoff node."],
-              ["Impact", "Readers may feel a setup thread was dropped or deprioritized."],
-              ["Suggested remediation", "Add a timeline marker, reveal scene, or outline beat before chapter 16 lands."],
+              ["Evidence", "A lore fact projects forward three chapters with no mirrored reveal or payoff node."],
+              ["Impact", "Readers may feel the book planted importance and then quietly walked away from it."],
+              ["Editorial move", "Add a reveal beat, a scene marker, or a linking chapter event before chapter 14 lands."],
             ],
           },
           {
-            id: "causal-gap",
+            id: "causal-jump",
             severity: "critical",
-            title: "High-impact alliance shift lacks precondition",
-            chapters: "16, 17",
-            summary: "A strong causal jump appears with insufficient earlier setup.",
-            detailTitle: "Risk reasoning",
+            title: "An alliance shift looks stronger than its setup",
+            chapters: "14, 15",
+            summary: "The causal relation is strong, but earlier chapters do not yet carry enough precondition weight.",
+            detailTitle: "Why the desk is worried",
             details: [
-              ["Evidence", "The relation confidence is high, but earlier chapters do not show enough causal groundwork."],
-              ["Impact", "The arc may read as abrupt, unearned, or contradictory to current motivation state."],
-              ["Suggested remediation", "Insert a motivating incident, dependency edge, or earlier chapter signal."],
+              ["Evidence", "A high-confidence relation points to a sharp turn with weak earlier support in the timeline."],
+              ["Impact", "The turn may read as unearned, abrupt, or out of character once drafted."],
+              ["Editorial move", "Seed motive, pressure, or consequence one or two chapters earlier."],
             ],
           },
           {
-            id: "timeline-gap",
+            id: "timeline-thin",
             severity: "info",
-            title: "Sparse temporal anchors across the next window",
-            chapters: "18, 19, 20",
-            summary: "The timeline is likely to drift if no new anchors are added.",
-            detailTitle: "Risk reasoning",
+            title: "The next chapter band is temporally thin",
+            chapters: "17, 18, 19",
+            summary: "Several future chapters still have too few anchors for clean continuity control.",
+            detailTitle: "Why the desk is worried",
             details: [
-              ["Evidence", "Several future chapters currently have no explicit temporal anchors."],
-              ["Impact", "Continuity pressure rises for travel, recovery, investigations, and causality."],
-              ["Suggested remediation", "Register temporal markers or chapter-spanning states before drafting continues."],
+              ["Evidence", "The current graph has sparse temporal markers across the projected window."],
+              ["Impact", "Travel, recovery, age, and event order are more likely to drift while drafting."],
+              ["Editorial move", "Register dates, durations, or chapter-span states before the manuscript expands."],
             ],
           },
         ],
       },
     },
     tools: {
-      eyebrow: "Full MCP toolchain",
-      title: "The repository exposes a broad authoring surface, not just a graph demo.",
+      eyebrow: "Full writing desk",
+      title: "A broad authoring surface sits behind the quiet design.",
       copy:
-        "This public page makes the whole toolchain legible: project bootstrap, worldbuilding, characters, outlines, prose refinement, critique, research, series planning, plugins, and genre support.",
+        "Scriptorium is not just a graph. The studio includes project setup, worldbuilding, character work, outlining, chapter drafting, prose refinement, research, critique, and extension points.",
       cards: [
-        ["project_manager", "Project lifecycle", "Create, inspect, export, and safely manage file-backed book projects."],
-        ["world_weaver", "World systems", "Build locations, cultures, core systems, timelines, factions, and themes."],
-        ["character_forger", "Character intelligence", "Create and evolve characters with tracked arcs and reusable profiles."],
-        ["story_architect", "Outline engine", "Shape beats, inspect structure, and surface twist opportunities."],
-        ["chapter_weaver", "Chapter drafting", "Write, append, inspect, and list chapters with manuscript continuity in mind."],
-        ["lore_guardian", "Consistency layer", "Register facts, run lore checks, and tap graph-backed timeline and contradiction analysis."],
-        ["prose_alchemist", "Voice + style", "Edit prose while preserving tone and generating controlled variants."],
-        ["series_planner", "Multi-book planning", "Map titles, progression, and series-level scaffolding."],
-        ["beta_reader", "Audience simulation", "Generate reader-feedback perspectives for targeted critique loops."],
-        ["research_quill", "Research support", "Track facts, bibliography, and validation for grounded writing."],
-        ["plugin_manager", "Ontology extensions", "Inspect and reload optional plugins that extend entity and rule vocabularies."],
-        ["genre_prompt", "Genre guidance", "Deliver tailored prompt direction for supported genres and writing modes."],
+        ["project_manager", "Workspace", "Create, inspect, export, and safely manage file-backed book projects."],
+        ["world_weaver", "Worldbuilding", "Grow locations, cultures, systems, timelines, factions, and themes."],
+        ["character_forger", "Cast", "Create characters, update profiles, and track arc movement."],
+        ["story_architect", "Structure", "Shape outline beats, inspect plot pressure, and surface twist options."],
+        ["chapter_weaver", "Drafting", "Write, append, inspect, and list chapters with continuity in view."],
+        ["lore_guardian", "Continuity", "Register facts, inspect lore, and run timeline and contradiction checks."],
+        ["prose_alchemist", "Style", "Refine prose while preserving voice and generating controlled variants."],
+        ["series_planner", "Series design", "Plan multi-book movement, titles, and progression."],
+        ["beta_reader", "Reader response", "Simulate critique perspectives for scenes and excerpts."],
+        ["research_quill", "Research", "Track facts, sources, and grounding material for the book."],
+        ["plugin_manager", "Extensions", "Inspect optional ontology plugins and richer entity vocabularies."],
+        ["genre_prompt", "Guidance", "Pull genre-aware prompt direction for drafting sessions."],
       ],
     },
     architecture: {
-      eyebrow: "System architecture",
-      title: "One canonical workspace, multiple delivery layers.",
+      eyebrow: "How the studio stays clean",
+      title: "One manuscript source of truth, multiple useful views.",
       copy:
-        "The architecture stays clean because the MCP authoring layer, the derived graph layer, and the public showcase each have a clear job instead of collapsing into one monolith.",
+        "The writing desk works because the project remains canonical on disk. Everything else the atlas, the forecast desk, and this public site derives from that source with clear boundaries.",
       steps: [
-        ["01", "MCP tools", "Author-facing tools write structured project files and domain records."],
-        ["02", "Canonical files", "Projects on disk remain the source of truth for world, outline, chapters, and lore facts."],
-        ["03", "Graph projection", "Localized temporal and causal projection builds the analytical graph surface."],
-        ["04", "Graph API + stream", "HTTP snapshots and WebSocket deltas expose the browser surface cleanly."],
-        ["05", "Explorer + forecast", "The browser visualizes the graph, timeline anchors, and explainable risk horizon."],
+        ["01", "Writing tools", "MCP tools write project files that remain understandable outside the browser UI."],
+        ["02", "Canonical folio", "World bible, characters, outline, chapters, and lore facts stay readable on disk."],
+        ["03", "Graph projection", "The system turns those files into localized entities, temporal spans, and causal hints."],
+        ["04", "Live graph service", "HTTP snapshots and WebSocket deltas feed the browser without bloating the authoring core."],
+        ["05", "Atlas and forecast", "The browser desk helps the author inspect structure, risk, and continuity before revising."],
       ],
       surfaces: [
-        ["A", "Delivery channels", "The repo now ships MCP over stdio, Graph API over HTTP, live deltas over WebSocket, and this public Pages front door."],
-        ["B", "Localization model", "English and Russian are modeled as localized fields and UI dictionaries, not duplicated entity trees."],
-        ["C", "Operational fit", "Docker, a clean README, and a public Pages site make the project far easier to evaluate and onboard."],
-        ["D", "Safe repository posture", "Ignored manuscript directories prevent accidental publication of local author data even in a public repo."],
+        ["A", "For writers", "The surface language stays close to books, scenes, chapters, and memory rather than abstract ops jargon."],
+        ["B", "For teams", "Editors and technical evaluators can still see the engine room, API surface, and deployment posture."],
+        ["C", "For localization", "English and Russian are modeled as views over one canonical story system."],
+        ["D", "For safe publishing", "A public repo and public Pages site do not expose local manuscript data because the workspace stays ignored."],
       ],
     },
     launch: {
-      eyebrow: "Launch and evaluate",
-      title: "Run the full stack locally, keep the public front door polished.",
+      eyebrow: "Run the studio",
+      title: "Keep the public face elegant, keep the runtime real.",
       copy:
-        "GitHub Pages now tells the product story, while local or hosted runtime can power the live explorer against the real graph service. That separation keeps the public surface elegant and the application honest.",
+        "GitHub Pages now works as a polished editorial front door. The actual browser explorer and graph service still run locally or on your own host when you want the live experience.",
       primary: "Open Repository",
-      secondary: "See All Tools",
+      secondary: "Review the Tools",
       command: [
         "npm install",
         "npm run build:all",
         "npm run dev",
         "",
-        "# in a second terminal",
+        "# second terminal",
         "npm run dev:web",
         "",
-        "# optional runtime endpoints",
+        "# useful endpoints",
         "http://localhost:4319/api/capabilities",
         "ws://localhost:4319/ws/projects/<project>/graph?locale=en",
       ].join("\n"),
     },
-    footer: "Scriptorium MCP public Pages showcase. File-first, graph-capable, bilingual, and designed for serious writing systems.",
+    footer: "Scriptorium MCP public atelier. File-first writing, a living book graph, bilingual presentation, and continuity intelligence for serious long-form projects.",
   },
   ru: {
-    brandTagline: "Публичная продуктовая витрина",
+    pageTitle: "Scriptorium MCP | Писательская студия для живых книг",
+    brandTagline: "Editorial Atelier",
     repoButton: "Репозиторий",
     nav: [
       ["overview", "Обзор"],
-      ["showcase", "Витрина"],
+      ["showcase", "Студия"],
       ["tools", "Инструменты"],
       ["architecture", "Архитектура"],
       ["launch", "Запуск"],
     ],
     hero: {
-      eyebrow: "Инфраструктура для сложных нарративов",
-      title: "Scriptorium MCP превращает писательский проект в живую графовую платформу.",
+      eyebrow: "Рабочее пространство для живых книжных проектов",
+      title: "Держи world bible, состав персонажей, главы и continuity в одной студии.",
       copy:
-        "Это file-first MCP-воркспейс для серьёзной работы с прозой: структурный worldbuilding, управление главами, двуязычный graph explorer, temporal-модель и объяснимый прогноз plot holes на десять глав вперёд.",
+        "Scriptorium MCP это file-first воркспейс для романов и больших книжных проектов. Здесь можно строить мир, вести состав персонажей, формировать главы, смотреть живой story graph и замечать continuity-risk до того, как он зацементируется в рукописи.",
       primary: "Открыть GitHub-репозиторий",
-      secondary: "Посмотреть продуктовую витрину",
-      visualEyebrow: "Живая продуктовая поверхность",
-      visualStatus: "ПУБЛИЧНЫЙ РЕПОЗИТОРИЙ",
+      secondary: "Пройти по студии",
+      visualEyebrow: "Вид стола",
+      visualStatus: "Pages-витрина активна",
       visualFooter:
-        "Этот GitHub Pages-сайт показывает polished-версию продукта: реальный explorer работает через локальный или размещённый Graph API и WebSocket-слой.",
-      insightEyebrow: "Пульс прогноза",
+        "Этот публичный сайт является editorial front door. Настоящий explorer по-прежнему работает поверх graph API и WebSocket-слоя репозитория.",
+      insightEyebrow: "Пульс continuity",
       stats: [
-        ["12", "Ключевых MCP-инструментов для старта проекта, мира, плана, прозы, исследований, QA и плагинов."],
-        ["HTTP + WS", "Отдельная graph-поверхность для браузера: snapshot-запросы и live delta stream."],
-        ["RU / EN", "Локализованные интерфейс, подписи графа и summaries прогноза из одной канонической модели."],
-        ["+10", "Ограниченный горизонт прогноза для temporal и causal рисков непрерывности."],
+        ["World Bible", "Каноническое досье для памяти мира, правил, фракций, тем и контекста истории."],
+        ["Story Atlas", "Браузерная карта персонажей, lore facts, chapter anchors и линий отношений."],
+        ["RU / EN", "Одна каноническая модель, которая рендерится на русском и английском в UI, графе и прогнозах."],
+        ["10 глав", "Ограниченный горизонт для temporal и causal анализа рисков сюжета."],
       ],
-      heroEvents: [
-        ["graph.node.upserted", "Арка персонажа обновлена после записи главы."],
-        ["graph.timeline.updated", "Временные опоры пересчитаны по текущему состоянию рукописи."],
-        ["graph.forecast.updated", "Окно будущих рисков обновлено на ближайшие десять глав."],
-        ["graph.connected", "Браузер синхронизирован с текущим snapshot проекта."],
-        ["graph.snapshot.ready", "Начальная графовая проекция доставлена в explorer."],
+      events: [
+        ["character_forger", "Арка персонажа сдвинулась после нового драфта главы."],
+        ["graph.timeline.updated", "Из текущего состояния рукописи были выведены новые temporal anchors."],
+        ["lore_guardian", "Новый факт вошёл в реестр лора и стал материалом для continuity."],
+        ["graph.forecast.updated", "Следующие десять глав были пересчитаны на предмет рисков."],
+        ["story_architect", "Изменился beat плана, и карта структурного давления обновилась."],
       ],
-      heroForecast: [
-        ["13", "info"],
-        ["14", "info"],
-        ["15", "warning"],
-        ["16", "warning"],
-        ["17", "critical"],
-        ["18", "info"],
-        ["19", "warning"],
+      forecast: [
+        ["11", "info"],
+        ["12", "info"],
+        ["13", "warning"],
+        ["14", "warning"],
+        ["15", "critical"],
+        ["16", "critical"],
+        ["17", "info"],
+        ["18", "warning"],
+        ["19", "info"],
         ["20", "warning"],
-        ["21", "info"],
-        ["22", "critical"],
       ],
     },
     overview: {
-      eyebrow: "Опорные слои платформы",
-      title: "Сделано так, чтобы оставаться понятным автору и мощным для системы.",
+      eyebrow: "Что эта студия даёт автору",
+      title: "Сделано для книг, а не для безличных дашбордов.",
       copy:
-        "Публичная витрина показывает реальные сильные стороны репозитория: безопасный file-first режим, опциональное graph-обогащение, двуязычную подачу и браузерную story-map, привязанную к каноническим артефактам проекта.",
+        "Публичная витрина теперь показывает Scriptorium как серьёзный писательский продукт: спокойную editorial-поверхность поверх реальной структуры проекта, живого graph explorer и continuity intelligence.",
       cards: [
-        ["01", "File-first ядро", "Проекты остаются каноническими на диске. Это безопасно для публикации и прозрачно для автора."],
-        ["02", "Живой graph explorer", "Отдельный Graph API и WebSocket-поток позволяют браузеру видеть живой граф без разрастания authoring core."],
-        ["03", "Temporal + causal reasoning", "Forecast-логика анализирует противоречия, пробелы таймлайна, missing prerequisites и незакрытые окна foreshadowing."],
-        ["04", "Двуязычная поверхность", "Русский и английский живут над одной канонической моделью, а не в двух дублированных деревьях сущностей."],
+        ["I", "Живая память мира", "Правила мира, места, фракции и лор остаются понятными автору и одновременно питают более глубокий графовый слой."],
+        ["II", "Состав и арки", "Персонажи перестают быть изолированными файлами и становятся рабочим реестром состояния, мотива и изменения."],
+        ["III", "Осознание глав", "Рукопись видна как диапазоны глав, опоры и окна развития, а не как плоская папка."],
+        ["IV", "Наблюдение за continuity", "Temporal и causal сигналы помогают заранее увидеть dropped setups, gaps и резкие повороты."],
       ],
     },
     showcase: {
-      eyebrow: "Интерактивная walkthrough-витрина",
-      title: "Три поверхности, одна story-система.",
+      eyebrow: "Прогулка по студии",
+      title: "Открой folio и посмотри на историю изнутри.",
       copy:
-        "Переключай вкладки, чтобы увидеть важные слои: визуальный graph explorer, temporal forecast horizon и runtime-модель, которая делает стек объяснимым.",
+        "Каждая панель ниже отражает реальный слой продукта: atlas мира и глав, continuity desk и engine room, который делает систему честной.",
       tabs: {
-        graph: "Graph Explorer",
-        forecast: "Forecast Horizon",
-        runtime: "Runtime Model",
+        graph: "Writer's Atlas",
+        forecast: "Continuity Desk",
+        runtime: "Engine Room",
       },
-      graphTitle: "Visual Graph Explorer",
+      graphTitle: "Writer's Atlas",
       graphCopy:
-        "Автор видит мир как живой граф, ищет связанные структуры и проваливается от сигнала прогноза к конкретным узлам и главам.",
-      graphEventsTitle: "Live event stream",
-      forecastTitle: "Temporal Knowledge Graph + causal reasoning",
+        "Explorer ощущается как рабочий архив книги: world bible, реестр персонажей, lore notes, chapter anchors и future risk остаются навигируемыми прямо в браузере.",
+      graphBadges: ["World Bible", "Cast Ledger", "Chapter Links"],
+      graphEventsTitle: "Последняя активность студии",
+      graphInspectorLabel: "Выбранная карточка",
+      forecastTitle: "Continuity Desk",
       forecastCopy:
-        "Прогнозный слой не обещает идеального предсказания. Он показывает объяснимый риск с evidence, confidence и затронутыми главами, чтобы автор сам принимал решение.",
-      runtimeTitle: "Операционная модель",
+        "Прогноз остаётся ограниченным и объяснимым. Вместо притворства полной точности Scriptorium показывает ближайшие места, где setup, время или причинность могут подвести рукопись.",
+      forecastBadges: ["Temporal", "Causal", "Окно 10 глав"],
+      runtimeTitle: "Engine Room",
       runtimeCopy:
-        "Scriptorium оставляет MCP-ядро для authoring простым, а браузерный графовый слой выносит отдельно. В итоге публичная история на GitHub выглядит чисто, а локальный workflow не страдает.",
-      runtimeTreeTitle: "Каноническая форма репозитория",
-      runtimeEndpointsTitle: "Поверхность доставки",
-      runtimeNotesTitle: "Почему это чисто деплоится",
+        "Публичный сайт выглядит спокойно и изящно, но под ним остаётся прозрачная система: file-first хранение проекта, отдельный graph service, optional Neo4j и чистая история деплоя.",
+      runtimeBadges: ["File-first", "Optional Neo4j", "GitHub Pages"],
+      runtimeTreeTitle: "Форма репозитория",
       runtimeTree: [
         "src/",
         "  backend/graph/",
         "  tools/",
         "web/",
         "docs/",
-        "projects/   # игнорируется локально",
+        "projects/   # локальные рукописи остаются вне git",
         "plugins/",
         "plans/",
       ],
+      runtimeEndpointsTitle: "Поверхность graph delivery",
       runtimeEndpoints: [
-        ["GET /api/capabilities", "Проверка capability и режима графа."],
-        ["GET /api/projects", "Известные проекты воркспейса для браузерного клиента."],
-        ["GET /api/projects/:project/graph", "Локализованный snapshot графа для explorer."],
-        ["GET /api/projects/:project/graph/timeline", "Отсортированные temporal anchors и контекст глав."],
-        ["GET /api/projects/:project/graph/forecast", "Объяснимый горизонт рисков с evidence и confidence."],
-        ["WS /ws/projects/:project/graph", "Live snapshot + delta stream для активного проекта."],
+        ["GET /api/capabilities", "Понять, доступны ли live graph, forecasting и локали."],
+        ["GET /api/projects", "Получить список известных проектов для браузерного стола."],
+        ["GET /api/projects/:project/graph", "Загрузить локализованный graph snapshot для активной книги."],
+        ["GET /api/projects/:project/graph/timeline", "Прочитать упорядоченные опоры глав и temporal context."],
+        ["GET /api/projects/:project/graph/forecast", "Посмотреть объяснимые risk cards на ближайшее окно письма."],
+        ["WS /ws/projects/:project/graph", "Стримить live graph deltas прямо в браузерную студию."],
       ],
+      runtimeNotesTitle: "Почему этот публичный сайт работает",
       runtimeNotes: [
-        ["Безопасная публикация", "Репозиторий публичный, но локальные рукописи остаются вне git благодаря `.gitignore`."],
-        ["Static Pages, live product", "GitHub Pages держит polished-витрину, а настоящий explorer подключается к Graph API."],
-        ["Опциональный граф", "Neo4j остаётся дополнительным слоем; проект всё ещё работает и в чистом file-backed режиме."],
+        ["Безопасный репозиторий", "Локальные директории рукописей исключены из git, поэтому публичный репозиторий остаётся безопасным."],
+        ["Отдельный front door", "GitHub Pages рассказывает историю продукта, не притворяясь живым runtime."],
+        ["Честная архитектура", "MCP-ядро, graph service, браузерный explorer и Pages-витрина имеют чёткие роли."],
       ],
       forecast: {
         chapters: [
-          ["13", "info"],
-          ["14", "warning"],
-          ["15", "warning"],
-          ["16", "critical"],
-          ["17", "critical"],
-          ["18", "info"],
-          ["19", "warning"],
-          ["20", "warning"],
-          ["21", "info"],
-          ["22", "critical"],
+          ["11", "info"],
+          ["12", "warning"],
+          ["13", "warning"],
+          ["14", "critical"],
+          ["15", "critical"],
+          ["16", "warning"],
+          ["17", "info"],
+          ["18", "warning"],
+          ["19", "info"],
+          ["20", "critical"],
         ],
         risks: [
           {
-            id: "foreshadowing-gap",
+            id: "payoff-gap",
             severity: "warning",
-            title: "Предвосхищённый артефакт не получает payoff к главе 16",
-            chapters: "14, 15, 16",
-            summary: "Граф видит setup, но пока не видит явного пути к развязке.",
-            detailTitle: "Как это объясняется",
+            title: "Посаженный артефакт может дойти до главы 14 без payoff",
+            chapters: "12, 13, 14",
+            summary: "В рукописи уже есть setup-энергия, но в графе пока не видно явной линии развязки.",
+            detailTitle: "Почему стол волнуется",
             details: [
-              ["Evidence", "Лор-факт тянется вперёд на три главы, но зеркального payoff-узла ещё нет."],
-              ["Impact", "У читателя может возникнуть ощущение брошенной или потерянной линии."],
-              ["Suggested remediation", "Добавить temporal marker, сцену раскрытия или beat плана до главы 16."],
+              ["Evidence", "Факт лора тянется вперёд на три главы, но зеркального reveal или payoff-узла ещё нет."],
+              ["Impact", "Читателю может показаться, что книга пообещала важность и тихо о ней забыла."],
+              ["Editorial move", "Добавить reveal beat, marker сцены или chapter event до главы 14."],
             ],
           },
           {
-            id: "causal-gap",
+            id: "causal-jump",
             severity: "critical",
-            title: "Сильный alliance shift без достаточной подготовки",
-            chapters: "16, 17",
-            summary: "Видна мощная causal-перемычка, но ранних предпосылок пока недостаточно.",
-            detailTitle: "Как это объясняется",
+            title: "Сдвиг союза выглядит сильнее, чем его подготовка",
+            chapters: "14, 15",
+            summary: "Causal relation уже сильна, но в ранних главах пока не хватает предпосылок.",
+            detailTitle: "Почему стол волнуется",
             details: [
-              ["Evidence", "У связи высокая confidence, но в ранних главах не хватает причинной подготовки."],
-              ["Impact", "Арка может читаться как резкая, незаработанная или противоречащая текущей мотивации."],
-              ["Suggested remediation", "Вставить мотивирующий инцидент, dependency edge или ранний сигнал в главе."],
+              ["Evidence", "Связь с высокой confidence указывает на резкий поворот при слабой подготовке в таймлайне."],
+              ["Impact", "Поворот может читаться как незаработанный, резкий или не в характере."],
+              ["Editorial move", "Посеять мотив, давление или последствие на одну-две главы раньше."],
             ],
           },
           {
-            id: "timeline-gap",
+            id: "timeline-thin",
             severity: "info",
-            title: "В будущем окне слишком мало temporal anchors",
-            chapters: "18, 19, 20",
-            summary: "Таймлайн может начать drift, если не добавить новые опоры.",
-            detailTitle: "Как это объясняется",
+            title: "Следующая полоса глав слишком тонка по temporal markers",
+            chapters: "17, 18, 19",
+            summary: "У нескольких будущих глав пока слишком мало опор для чистого контроля continuity.",
+            detailTitle: "Почему стол волнуется",
             details: [
-              ["Evidence", "У нескольких будущих глав сейчас нет явных временных опор."],
-              ["Impact", "Возрастает риск ошибок в путешествиях, восстановлении, расследовании и причинности."],
-              ["Suggested remediation", "Зарегистрировать temporal markers или chapter-spanning states до продолжения драфта."],
+              ["Evidence", "В текущем графе мало temporal markers в прогнозируемом окне."],
+              ["Impact", "Путешествия, восстановление, возраст и порядок событий начинают чаще drift."],
+              ["Editorial move", "Зарегистрировать даты, durations или chapter-span states до расширения рукописи."],
             ],
           },
         ],
       },
     },
     tools: {
-      eyebrow: "Полная MCP-поверхность",
-      title: "Репозиторий даёт большой authoring-сет, а не только графовый demo.",
+      eyebrow: "Полный писательский стол",
+      title: "За спокойным дизайном скрывается большой набор authoring-инструментов.",
       copy:
-        "Эта публичная страница делает видимым весь toolchain: старт проекта, worldbuilding, персонажи, план, редактура, критика, исследования, сериалы, плагины и жанровая поддержка.",
+        "Scriptorium это не просто граф. Внутри студии есть настройка проекта, worldbuilding, персонажи, план, draft глав, редактирование прозы, research, critique и extension points.",
       cards: [
-        ["project_manager", "Жизненный цикл проекта", "Создание, инспекция, экспорт и безопасное управление file-backed проектами."],
-        ["world_weaver", "Системы мира", "Локации, культуры, core systems, таймлайны, фракции и темы."],
-        ["character_forger", "Интеллект персонажей", "Создание и развитие персонажей с арками и переиспользуемыми профилями."],
-        ["story_architect", "Движок плана", "Работа с beat-структурой, чтение плана и поиск twist-возможностей."],
-        ["chapter_weaver", "Драфтинг глав", "Запись, дописывание и инспекция глав с учётом непрерывности рукописи."],
-        ["lore_guardian", "Слой консистентности", "Регистрация фактов, проверка лора и graph-backed анализ таймлайна и противоречий."],
-        ["prose_alchemist", "Голос и стиль", "Редактура прозы с сохранением тона и генерацией контролируемых вариантов."],
-        ["series_planner", "Многокнижная структура", "Планирование названий, прогрессии и каркаса серии."],
-        ["beta_reader", "Симуляция аудитории", "Перспективы читателя для targeted critique loop."],
-        ["research_quill", "Исследовательская поддержка", "Факты, библиография и проверка данных для grounded writing."],
-        ["plugin_manager", "Онтологические расширения", "Инспекция и перезагрузка плагинов, которые расширяют словарь сущностей и правил."],
-        ["genre_prompt", "Жанровое guidance", "Жанровые prompt-направления для поддерживаемых режимов письма."],
+        ["project_manager", "Workspace", "Создание, инспекция, экспорт и безопасное управление file-backed проектами."],
+        ["world_weaver", "Worldbuilding", "Рост локаций, культур, систем, таймлайнов, фракций и тем."],
+        ["character_forger", "Cast", "Создание персонажей, обновление профилей и трекинг арок."],
+        ["story_architect", "Structure", "Работа с beat-структурой, плотностью сюжета и возможностями twist."],
+        ["chapter_weaver", "Drafting", "Запись, дописывание и чтение глав с оглядкой на continuity."],
+        ["lore_guardian", "Continuity", "Регистрация фактов, инспекция лора и проверки таймлайна и противоречий."],
+        ["prose_alchemist", "Style", "Улучшение прозы с сохранением голоса и контролируемыми вариантами."],
+        ["series_planner", "Series design", "Планирование движения серии, названий и общей прогрессии."],
+        ["beta_reader", "Reader response", "Симуляция читательского отклика для сцен и отрывков."],
+        ["research_quill", "Research", "Факты, источники и grounding material для книги."],
+        ["plugin_manager", "Extensions", "Инспекция optional ontology plugins и richer entity vocabularies."],
+        ["genre_prompt", "Guidance", "Жанровое направление для сессий письма."],
       ],
     },
     architecture: {
-      eyebrow: "Системная архитектура",
-      title: "Один канонический воркспейс, несколько поверхностей доставки.",
+      eyebrow: "Почему студия остаётся чистой",
+      title: "Один канонический источник рукописи, несколько полезных представлений.",
       copy:
-        "Архитектура остаётся чистой, потому что authoring-слой MCP, производный graph-слой и публичная Pages-витрина у каждого имеют свою задачу.",
+        "Рабочий стол работает потому, что проект остаётся каноническим на диске. Всё остальное atlas, continuity desk и этот публичный сайт выводится из этого источника с понятными границами.",
       steps: [
-        ["01", "MCP tools", "Авторские инструменты пишут структурные проектные файлы и доменные записи."],
-        ["02", "Канонические файлы", "Проекты на диске остаются источником истины для мира, плана, глав и lore facts."],
-        ["03", "Graph projection", "Локализованная temporal/causal проекция строит аналитический graph surface."],
-        ["04", "Graph API + stream", "HTTP snapshots и WebSocket deltas чисто отдают браузерный слой."],
-        ["05", "Explorer + forecast", "Браузер визуализирует граф, temporal anchors и объяснимый horizon рисков."],
+        ["01", "Writing tools", "MCP-инструменты пишут проектные файлы, понятные и без браузерного UI."],
+        ["02", "Canonical folio", "World bible, персонажи, план, главы и lore facts остаются читаемыми на диске."],
+        ["03", "Graph projection", "Система превращает эти файлы в localized entities, temporal spans и causal hints."],
+        ["04", "Live graph service", "HTTP snapshots и WebSocket deltas питают браузер, не раздувая authoring core."],
+        ["05", "Atlas и forecast", "Браузерный стол помогает автору видеть структуру, риск и continuity до ревизии."],
       ],
       surfaces: [
-        ["A", "Каналы доставки", "Теперь у проекта есть MCP по stdio, Graph API по HTTP, live deltas по WebSocket и публичный Pages-front door."],
-        ["B", "Локализационная модель", "Русский и английский живут как localized fields и UI dictionaries, а не как дубликаты сущностей."],
-        ["C", "Операционная готовность", "Docker, чистый README и публичный Pages-сайт делают проект гораздо проще для оценки и онбординга."],
-        ["D", "Безопасный репозиторий", "Игнорирование manuscript-директорий предотвращает случайную публикацию локальных авторских данных."],
+        ["A", "Для автора", "Язык поверхности остаётся близким к книге, сценам, главам и памяти мира, а не к абстрактным ops-терминам."],
+        ["B", "Для команды", "Редактор и технический оценщик всё ещё видят engine room, API-поверхность и deployment posture."],
+        ["C", "Для локализации", "Русский и английский живут как представления над одной канонической story system."],
+        ["D", "Для безопасной публикации", "Публичный репозиторий и публичный Pages-сайт не раскрывают локальные manuscript-данные."],
       ],
     },
     launch: {
-      eyebrow: "Запуск и оценка",
-      title: "Полный стек работает локально, а публичный вход выглядит как продукт.",
+      eyebrow: "Запуск студии",
+      title: "Публичное лицо может быть изящным, а runtime оставаться настоящим.",
       copy:
-        "Теперь GitHub Pages рассказывает историю продукта, а локальный или размещённый runtime питает настоящий live explorer через graph service. Такое разделение делает публичную поверхность красивой, а приложение честным.",
+        "GitHub Pages теперь выступает polished editorial front door. Реальный browser explorer и graph service по-прежнему запускаются локально или на твоём собственном хосте, когда нужен live-режим.",
       primary: "Открыть репозиторий",
-      secondary: "Смотреть все инструменты",
+      secondary: "Посмотреть инструменты",
       command: [
         "npm install",
         "npm run build:all",
         "npm run dev",
         "",
-        "# во втором терминале",
+        "# второй терминал",
         "npm run dev:web",
         "",
-        "# полезные runtime endpoints",
+        "# полезные endpoints",
         "http://localhost:4319/api/capabilities",
         "ws://localhost:4319/ws/projects/<project>/graph?locale=ru",
       ].join("\n"),
     },
-    footer: "Публичная GitHub Pages-витрина Scriptorium MCP. File-first, graph-capable, двуязычный и сделанный для серьёзных writing systems.",
+    footer: "Публичная atelier-витрина Scriptorium MCP. File-first письмо, живой граф книги, двуязычная подача и continuity intelligence для серьёзных long-form проектов.",
   },
 };
 
 const state = {
   locale: detectLocale(),
   activeTab: "graph",
-  activeNode: "project",
-  activeRisk: "foreshadowing-gap",
+  activeNode: "atlas",
+  activeRisk: "payoff-gap",
   eventCursor: 0,
 };
 
@@ -712,17 +735,20 @@ const elements = {
   demoTabs: document.getElementById("demo-tabs"),
   graphPanelTitle: document.getElementById("graph-panel-title"),
   graphPanelCopy: document.getElementById("graph-panel-copy"),
+  graphBadges: document.getElementById("graph-badges"),
   graphNodeLayer: document.getElementById("graph-node-layer"),
   graphInspector: document.getElementById("graph-inspector"),
   graphEventsTitle: document.getElementById("graph-events-title"),
   graphEvents: document.getElementById("graph-events"),
   forecastPanelTitle: document.getElementById("forecast-panel-title"),
   forecastPanelCopy: document.getElementById("forecast-panel-copy"),
+  forecastBadges: document.getElementById("forecast-badges"),
   forecastChapters: document.getElementById("forecast-chapters"),
   forecastList: document.getElementById("forecast-list"),
   forecastDetail: document.getElementById("forecast-detail"),
   runtimePanelTitle: document.getElementById("runtime-panel-title"),
   runtimePanelCopy: document.getElementById("runtime-panel-copy"),
+  runtimeBadges: document.getElementById("runtime-badges"),
   runtimeTreeTitle: document.getElementById("runtime-tree-title"),
   runtimeTree: document.getElementById("runtime-tree"),
   runtimeEndpointsTitle: document.getElementById("runtime-endpoints-title"),
@@ -756,7 +782,7 @@ function detectLocale() {
 }
 
 function escapeHtml(value) {
-  return value
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -770,9 +796,7 @@ function getDictionary() {
 function render() {
   const dict = getDictionary();
   document.documentElement.lang = state.locale;
-  document.title = state.locale === "ru"
-    ? "Scriptorium MCP | Графовая платформа для писателя"
-    : "Scriptorium MCP | Narrative Graph Platform";
+  document.title = dict.pageTitle;
 
   elements.brandTagline.textContent = dict.brandTagline;
   elements.repoLink.textContent = dict.repoButton;
@@ -821,15 +845,14 @@ function renderHero(dict) {
     .join("");
 
   renderNodes(elements.heroNodeLayer, "hero");
-  renderForecastStrip(elements.heroForecastStrip, dict.hero.heroForecast);
-  renderEventStream(elements.heroLog, dict.hero.heroEvents);
+  renderForecastStrip(elements.heroForecastStrip, dict.hero.forecast);
+  renderEventStream(elements.heroLog, dict.hero.events);
 }
 
 function renderOverview(dict) {
   elements.overviewEyebrow.textContent = dict.overview.eyebrow;
   elements.overviewTitle.textContent = dict.overview.title;
   elements.overviewCopy.textContent = dict.overview.copy;
-
   elements.featureGrid.innerHTML = dict.overview.cards
     .map(([icon, title, copy]) => `
       <article class="feature-card">
@@ -845,7 +868,6 @@ function renderShowcase(dict) {
   elements.showcaseEyebrow.textContent = dict.showcase.eyebrow;
   elements.showcaseTitle.textContent = dict.showcase.title;
   elements.showcaseCopy.textContent = dict.showcase.copy;
-
   elements.demoTabs.innerHTML = Object.entries(dict.showcase.tabs)
     .map(([id, label]) => `
       <button class="demo-tab ${state.activeTab === id ? "is-active" : ""}" data-tab="${id}" type="button" role="tab" aria-selected="${state.activeTab === id}">
@@ -860,17 +882,20 @@ function renderShowcase(dict) {
 
   elements.graphPanelTitle.textContent = dict.showcase.graphTitle;
   elements.graphPanelCopy.textContent = dict.showcase.graphCopy;
+  renderBadges(elements.graphBadges, dict.showcase.graphBadges);
   elements.graphEventsTitle.textContent = dict.showcase.graphEventsTitle;
   renderNodes(elements.graphNodeLayer, "panel");
-  renderInspector();
-  renderEventStream(elements.graphEvents, dict.hero.heroEvents);
+  renderInspector(dict.showcase.graphInspectorLabel);
+  renderEventStream(elements.graphEvents, dict.hero.events);
 
   elements.forecastPanelTitle.textContent = dict.showcase.forecastTitle;
   elements.forecastPanelCopy.textContent = dict.showcase.forecastCopy;
+  renderBadges(elements.forecastBadges, dict.showcase.forecastBadges);
   renderForecastPanel(dict.showcase.forecast);
 
   elements.runtimePanelTitle.textContent = dict.showcase.runtimeTitle;
   elements.runtimePanelCopy.textContent = dict.showcase.runtimeCopy;
+  renderBadges(elements.runtimeBadges, dict.showcase.runtimeBadges);
   elements.runtimeTreeTitle.textContent = dict.showcase.runtimeTreeTitle;
   elements.runtimeTree.textContent = dict.showcase.runtimeTree.join("\n");
   elements.runtimeEndpointsTitle.textContent = dict.showcase.runtimeEndpointsTitle;
@@ -921,7 +946,6 @@ function renderArchitecture(dict) {
       </article>
     `)
     .join("");
-
   elements.surfaceGrid.innerHTML = dict.architecture.surfaces
     .map(([icon, title, copy]) => `
       <article class="surface-card">
@@ -948,20 +972,25 @@ function renderFooter(dict) {
   elements.footerCopy.textContent = dict.footer;
 }
 
+function renderBadges(target, items) {
+  target.innerHTML = items.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("");
+}
+
 function renderNodes(target, mode) {
   target.innerHTML = graphNodes
     .map((node) => {
       const localized = node.labels[state.locale];
       const position = mode === "hero" ? node.heroPosition : node.panelPosition;
+      const tilt = mode === "hero" ? node.heroTilt : node.panelTilt;
       return `
         <button
           class="graph-node ${state.activeNode === node.id ? "is-active" : ""}"
           data-node="${node.id}"
           data-kind="${node.kind}"
-          style="--x:${position.x}%; --y:${position.y}%"
+          style="--x:${position.x}%; --y:${position.y}%; --tilt:${tilt}deg"
           type="button"
         >
-          <span class="graph-node__kind">${escapeHtml(localized.kind)}</span>
+          <span class="graph-node__kind">${escapeHtml(localized.chip)}</span>
           <strong>${escapeHtml(localized.title)}</strong>
           <span>${escapeHtml(localized.summary)}</span>
         </button>
@@ -970,23 +999,22 @@ function renderNodes(target, mode) {
     .join("");
 }
 
-function renderInspector() {
+function renderInspector(label) {
   const node = graphNodes.find((item) => item.id === state.activeNode) ?? graphNodes[0];
   const localized = node.labels[state.locale];
-
   elements.graphInspector.innerHTML = `
-    <div class="eyebrow">${state.locale === "ru" ? "Выбранный узел" : "Selected node"}</div>
+    <div class="eyebrow">${escapeHtml(label)}</div>
     <h3>${escapeHtml(localized.title)}</h3>
     <p>${escapeHtml(localized.description)}</p>
     <div class="pill-row">
-      <span class="pill">${escapeHtml(localized.kind)}</span>
+      <span class="pill">${escapeHtml(localized.chip)}</span>
       <span class="pill">${escapeHtml(node.kind)}</span>
     </div>
     <div class="mini-stat-row">
       ${localized.metrics
-        .map(([label, value]) => `
+        .map(([title, value]) => `
           <div class="mini-stat">
-            <span>${escapeHtml(label)}</span>
+            <span>${escapeHtml(title)}</span>
             <strong>${escapeHtml(value)}</strong>
           </div>
         `)
@@ -997,9 +1025,9 @@ function renderInspector() {
 
 function renderForecastStrip(target, items) {
   target.innerHTML = items
-    .map(([label, severity]) => `
+    .map(([chapter, severity]) => `
       <div class="forecast-cell forecast-cell--${severity}">
-        <span>Ch. ${escapeHtml(label)}</span>
+        <span>Ch. ${escapeHtml(chapter)}</span>
         <div class="forecast-cell__bar"></div>
       </div>
     `)
@@ -1008,9 +1036,7 @@ function renderForecastStrip(target, items) {
 
 function renderForecastPanel(forecast) {
   elements.forecastChapters.innerHTML = forecast.chapters
-    .map(([label, severity]) => `
-      <div class="chapter-pill chapter-pill--${severity}">Ch. ${escapeHtml(label)}</div>
-    `)
+    .map(([chapter, severity]) => `<div class="chapter-pill chapter-pill--${severity}">Ch. ${escapeHtml(chapter)}</div>`)
     .join("");
 
   elements.forecastList.innerHTML = forecast.risks
@@ -1047,8 +1073,7 @@ function renderForecastPanel(forecast) {
 function renderEventStream(target, events) {
   const visible = [];
   for (let index = 0; index < 3; index += 1) {
-    const item = events[(state.eventCursor + index) % events.length];
-    visible.push(item);
+    visible.push(events[(state.eventCursor + index) % events.length]);
   }
 
   target.innerHTML = visible
@@ -1113,11 +1138,11 @@ function installRevealObserver() {
 
 function startTicker() {
   window.setInterval(() => {
-    const events = getDictionary().hero.heroEvents;
+    const events = getDictionary().hero.events;
     state.eventCursor = (state.eventCursor + 1) % events.length;
     renderEventStream(elements.heroLog, events);
     renderEventStream(elements.graphEvents, events);
-  }, 3200);
+  }, 3400);
 }
 
 installEvents();
