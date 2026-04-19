@@ -1124,6 +1124,153 @@ function installEvents() {
   });
 }
 
+function installSmoothScroll() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+
+  if (prefersReducedMotion || !hasFinePointer || navigator.maxTouchPoints > 0) {
+    return;
+  }
+
+  let currentY = window.scrollY;
+  let targetY = window.scrollY;
+  let frame = 0;
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  const maxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+  const syncScroll = (nextTarget) => {
+    targetY = clamp(nextTarget, 0, maxScrollY());
+    if (frame === 0) {
+      frame = window.requestAnimationFrame(tick);
+    }
+  };
+
+  const toPixels = (deltaY, deltaMode) => {
+    if (deltaMode === WheelEvent.DOM_DELTA_LINE) return deltaY * 18;
+    if (deltaMode === WheelEvent.DOM_DELTA_PAGE) return deltaY * window.innerHeight * 0.92;
+    return deltaY;
+  };
+
+  const hasScrollableParent = (node) => {
+    if (!(node instanceof Element)) return false;
+
+    let current = node;
+    while (current && current !== document.body) {
+      const style = window.getComputedStyle(current);
+      const overflowY = style.overflowY;
+      const canScroll = /(auto|scroll|overlay)/.test(overflowY) && current.scrollHeight > current.clientHeight;
+      if (canScroll) {
+        return true;
+      }
+      current = current.parentElement;
+    }
+
+    return false;
+  };
+
+  const tick = () => {
+    currentY += (targetY - currentY) * 0.14;
+
+    if (Math.abs(targetY - currentY) < 0.35) {
+      currentY = targetY;
+      window.scrollTo(0, currentY);
+      frame = 0;
+      return;
+    }
+
+    window.scrollTo(0, currentY);
+    frame = window.requestAnimationFrame(tick);
+  };
+
+  const getKeyDelta = (event) => {
+    switch (event.key) {
+      case "ArrowDown":
+        return 100;
+      case "ArrowUp":
+        return -100;
+      case "PageDown":
+        return window.innerHeight * 0.92;
+      case "PageUp":
+        return -window.innerHeight * 0.92;
+      case " ":
+        return (event.shiftKey ? -1 : 1) * window.innerHeight * 0.92;
+      case "Home":
+        return -maxScrollY();
+      case "End":
+        return maxScrollY();
+      default:
+        return null;
+    }
+  };
+
+  window.addEventListener("wheel", (event) => {
+    if (event.ctrlKey || Math.abs(event.deltaY) < 0.1) return;
+    if (hasScrollableParent(event.target)) return;
+
+    event.preventDefault();
+    syncScroll(targetY + toPixels(event.deltaY, event.deltaMode) * 0.95);
+  }, { passive: false });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLElement &&
+      (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))
+    ) {
+      return;
+    }
+
+    const delta = getKeyDelta(event);
+    if (delta === null) return;
+
+    event.preventDefault();
+
+    if (event.key === "Home") {
+      syncScroll(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      syncScroll(maxScrollY());
+      return;
+    }
+
+    syncScroll(targetY + delta);
+  }, { passive: false });
+
+  window.addEventListener("scroll", () => {
+    if (frame !== 0) return;
+    currentY = window.scrollY;
+    targetY = window.scrollY;
+  }, { passive: true });
+
+  window.addEventListener("resize", () => {
+    currentY = clamp(currentY, 0, maxScrollY());
+    targetY = clamp(targetY, 0, maxScrollY());
+  });
+
+  document.addEventListener("click", (event) => {
+    const anchor = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+    if (!(anchor instanceof HTMLAnchorElement)) return;
+
+    const href = anchor.getAttribute("href");
+    if (!href || href === "#") return;
+
+    const section = document.querySelector(href);
+    if (!(section instanceof HTMLElement)) return;
+
+    event.preventDefault();
+    const headerOffset = document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
+    const sectionTop = window.scrollY + section.getBoundingClientRect().top - headerOffset - 18;
+    syncScroll(sectionTop);
+    window.history.replaceState(null, "", href);
+  });
+}
+
 function startTicker() {
   window.setInterval(() => {
     const events = getDictionary().hero.events;
@@ -1134,5 +1281,6 @@ function startTicker() {
 }
 
 installEvents();
+installSmoothScroll();
 render();
 startTicker();
