@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
 import type { GraphCapabilitiesDTO } from "../backend/graph/graph-dtos.js";
 
@@ -14,6 +14,13 @@ function toLoopbackHost(host?: string): string {
 export function npmExecutable(): string {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
+
+export type ManagedWebExplorer = {
+  readonly child: ChildProcess;
+  readonly pid: number | undefined;
+  close: () => Promise<void>;
+  closeSync: () => void;
+};
 
 function webSpawnCommand(webDir: string, script: string): { command: string; args: string[] } {
   if (process.platform === "win32") {
@@ -113,6 +120,51 @@ function isScriptoriumProcess(commandLine: string | undefined, projectRoot: stri
   return normalized.includes(normalizedRoot) && (normalized.includes("/dist/index.js") || normalized.includes("/src/index.ts"));
 }
 
+function isScriptoriumWebProcess(commandLine: string | undefined, projectRoot: string): boolean {
+  if (!commandLine) return false;
+  const normalized = commandLine.replace(/\\/g, "/").toLowerCase();
+  const normalizedRoot = projectRoot.replace(/\\/g, "/").toLowerCase();
+  return normalized.includes(normalizedRoot)
+    && normalized.includes("/web/")
+    && normalized.includes("next/dist/bin/next");
+}
+
+async function stopProcessTree(pid: number | undefined): Promise<void> {
+  if (!pid) return;
+
+  if (process.platform === "win32") {
+    spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    return;
+  }
+
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {
+    // Process already gone.
+  }
+}
+
+function stopProcessTreeSync(pid: number | undefined): void {
+  if (!pid) return;
+
+  if (process.platform === "win32") {
+    spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    return;
+  }
+
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {
+    // Process already gone.
+  }
+}
+
 export async function replaceStaleGraphApiOnWindows(options: {
   port: number;
   projectRoot: string;
@@ -137,22 +189,53 @@ export async function replaceStaleGraphApiOnWindows(options: {
   return waitForPortState(options.port, "127.0.0.1", false, 5000);
 }
 
+async function replaceStaleWebExplorerOnWindows(options: {
+  port: number;
+  projectRoot: string;
+}): Promise<boolean> {
+  if (process.platform !== "win32") return false;
+
+  const processInfo = readWindowsProcessOnPort(options.port);
+  if (!processInfo?.ProcessId || !isScriptoriumWebProcess(processInfo.CommandLine, options.projectRoot)) {
+    return false;
+  }
+
+  const taskKill = spawnSync("taskkill", ["/PID", String(processInfo.ProcessId), "/T", "/F"], {
+    stdio: "ignore",
+    windowsHide: true,
+  });
+
+  if (taskKill.status !== 0) return false;
+  return waitForPortState(options.port, "127.0.0.1", false, 5000);
+}
+
 export async function maybeAutoStartWebExplorer(options: {
   projectRoot: string;
   graphHttpUrl: string;
   host?: string;
   port?: number;
-}): Promise<void> {
-  if (!isAutoStartEnabled(process.env.SCRIPTORIUM_WEB_AUTOSTART, true)) return;
+}): Promise<ManagedWebExplorer | null> {
+  if (!isAutoStartEnabled(process.env.SCRIPTORIUM_WEB_AUTOSTART, true)) return null;
 
   const webDir = path.join(options.projectRoot, "web");
   const packageJsonPath = path.join(webDir, "package.json");
   const nextModulePath = path.join(webDir, "node_modules", "next");
-  if (!fs.existsSync(packageJsonPath) || !fs.existsSync(nextModulePath)) return;
+  if (!fs.existsSync(packageJsonPath) || !fs.existsSync(nextModulePath)) return null;
 
   const port = Number(process.env.SCRIPTORIUM_WEB_PORT ?? options.port ?? 3000);
-  if (!Number.isFinite(port)) return;
-  if (await isTcpPortOpen(port, options.host)) return;
+  if (!Number.isFinite(port)) return null;
+
+  const existingPortOpen = await isTcpPortOpen(port, options.host);
+  if (existingPortOpen) {
+    const replaced = await replaceStaleWebExplorerOnWindows({
+      port,
+      projectRoot: options.projectRoot,
+    });
+
+    if (!replaced) {
+      return null;
+    }
+  }
 
   const hostname = options.host ?? process.env.SCRIPTORIUM_WEB_HOST ?? "127.0.0.1";
   const hasProductionBuild = fs.existsSync(path.join(webDir, ".next", "BUILD_ID"));
@@ -163,7 +246,7 @@ export async function maybeAutoStartWebExplorer(options: {
   try {
     const child = spawn(spawnCommand.command, spawnCommand.args, {
       cwd: options.projectRoot,
-      detached: process.platform !== "win32",
+      detached: false,
       stdio: usePipeStdio ? ["ignore", "pipe", "pipe"] : "ignore",
       windowsHide: true,
       env: {
@@ -180,7 +263,19 @@ export async function maybeAutoStartWebExplorer(options: {
     child.stdout?.resume();
     child.stderr?.resume();
     child.unref();
+
+    return {
+      child,
+      pid: child.pid,
+      close: async () => {
+        await stopProcessTree(child.pid);
+      },
+      closeSync: () => {
+        stopProcessTreeSync(child.pid);
+      },
+    };
   } catch (error) {
     console.error(`[Scriptorium] Web Explorer auto-start skipped: ${String(error)}`);
+    return null;
   }
 }

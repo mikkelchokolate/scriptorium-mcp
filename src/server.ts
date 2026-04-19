@@ -15,7 +15,12 @@ import { createProjectService } from "./services/project-service.js";
 import { GraphQueryService } from "./backend/graph/graph-query-service.js";
 import { GraphEventStreamService } from "./backend/graph/graph-event-stream-service.js";
 import { GraphApiServer } from "./backend/graph/graph-api-server.js";
-import { maybeAutoStartWebExplorer, readGraphCapabilities, replaceStaleGraphApiOnWindows } from "./utils/local-runtime.js";
+import {
+  maybeAutoStartWebExplorer,
+  readGraphCapabilities,
+  replaceStaleGraphApiOnWindows,
+  type ManagedWebExplorer,
+} from "./utils/local-runtime.js";
 
 import { worldWeaver, worldWeaverSchema } from "./tools/world-weaver.js";
 import { characterForger, characterForgerSchema } from "./tools/character-forger.js";
@@ -110,11 +115,66 @@ try {
   }
 }
 
-await maybeAutoStartWebExplorer({
+const managedWebExplorer = await maybeAutoStartWebExplorer({
   projectRoot: REPO_ROOT,
   graphHttpUrl: graphProbeBaseUrl(graphHost, resolvedGraphPort),
   host: process.env.SCRIPTORIUM_WEB_HOST,
   port: Number(process.env.SCRIPTORIUM_WEB_PORT ?? "3000"),
+});
+
+if (managedWebExplorer?.pid) {
+  console.error(`[Scriptorium] Web Explorer listening via child process on http://${process.env.SCRIPTORIUM_WEB_HOST ?? "127.0.0.1"}:${process.env.SCRIPTORIUM_WEB_PORT ?? "3000"}`);
+}
+
+function registerRuntimeCleanup(options: {
+  graphApiServer: GraphApiServer;
+  managedWebExplorer: ManagedWebExplorer | null;
+}): void {
+  let shuttingDown = false;
+
+  const shutdown = async (exitCode?: number) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    try {
+      await options.managedWebExplorer?.close();
+    } catch {
+      // Best-effort shutdown.
+    }
+
+    try {
+      await options.graphApiServer.close();
+    } catch {
+      // Best-effort shutdown.
+    }
+
+    try {
+      await loreService.close();
+    } catch {
+      // Best-effort shutdown.
+    }
+
+    if (typeof exitCode === "number") {
+      process.exit(exitCode);
+    }
+  };
+
+  const shutdownSync = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    options.managedWebExplorer?.closeSync();
+  };
+
+  process.once("SIGINT", () => { void shutdown(0); });
+  process.once("SIGTERM", () => { void shutdown(0); });
+  process.once("SIGHUP", () => { void shutdown(0); });
+  process.once("beforeExit", () => { void shutdown(); });
+  process.once("exit", shutdownSync);
+}
+
+registerRuntimeCleanup({
+  graphApiServer,
+  managedWebExplorer,
 });
 
 const server = new McpServer({

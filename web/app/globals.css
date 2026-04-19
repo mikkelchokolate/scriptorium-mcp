@@ -254,17 +254,22 @@ input {
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 20px;
   padding: 22px;
+  align-items: stretch;
 }
 
 .explorer__main,
 .explorer__side {
-  min-height: calc(100vh - 44px);
+  min-height: 0;
 }
 
 .explorer__main {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
+  height: calc(100dvh - 44px);
+  position: sticky;
+  top: 22px;
+  align-self: start;
 }
 
 .toolbar {
@@ -303,6 +308,8 @@ input {
 
 .flow-frame {
   position: relative;
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
   border-radius: 32px;
   border: 1px solid rgba(86, 61, 37, 0.12);
@@ -375,6 +382,8 @@ input {
   display: grid;
   gap: 16px;
   align-content: start;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .side-card {
@@ -562,6 +571,16 @@ input {
   .explorer__main,
   .explorer__side {
     min-height: auto;
+    height: auto;
+  }
+
+  .explorer__main {
+    position: static;
+  }
+
+  .explorer__side {
+    overflow: visible;
+    padding-right: 0;
   }
 }
 
