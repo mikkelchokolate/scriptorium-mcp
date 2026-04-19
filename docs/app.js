@@ -1127,6 +1127,8 @@ function installEvents() {
 function installSmoothScroll() {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+  const spring = 0.075;
+  const damping = 0.8;
 
   if (prefersReducedMotion || !hasFinePointer || navigator.maxTouchPoints > 0) {
     return;
@@ -1134,6 +1136,7 @@ function installSmoothScroll() {
 
   let currentY = window.scrollY;
   let targetY = window.scrollY;
+  let velocity = 0;
   let frame = 0;
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -1171,10 +1174,13 @@ function installSmoothScroll() {
   };
 
   const tick = () => {
-    currentY += (targetY - currentY) * 0.14;
+    const distance = targetY - currentY;
+    velocity = velocity * damping + distance * spring;
+    currentY = clamp(currentY + velocity, 0, maxScrollY());
 
-    if (Math.abs(targetY - currentY) < 0.35) {
+    if (Math.abs(distance) < 0.35 && Math.abs(velocity) < 0.3) {
       currentY = targetY;
+      velocity = 0;
       window.scrollTo(0, currentY);
       frame = 0;
       return;
@@ -1246,11 +1252,13 @@ function installSmoothScroll() {
     if (frame !== 0) return;
     currentY = window.scrollY;
     targetY = window.scrollY;
+    velocity = 0;
   }, { passive: true });
 
   window.addEventListener("resize", () => {
     currentY = clamp(currentY, 0, maxScrollY());
     targetY = clamp(targetY, 0, maxScrollY());
+    velocity = 0;
   });
 
   document.addEventListener("click", (event) => {
