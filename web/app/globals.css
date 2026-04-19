@@ -1,23 +1,28 @@
 @import "@xyflow/react/dist/style.css";
 
 :root {
-  --bg: #f4efe5;
-  --bg-strong: #e9dbc2;
+  --paper: #f4ecde;
+  --paper-strong: #efe2cc;
+  --paper-soft: rgba(255, 250, 242, 0.86);
+  --paper-card: linear-gradient(180deg, rgba(255, 252, 246, 0.96), rgba(245, 235, 220, 0.94));
+  --bg: var(--paper);
+  --bg-strong: var(--paper-strong);
   --panel: rgba(255, 250, 241, 0.88);
   --panel-strong: rgba(250, 241, 225, 0.96);
-  --line: rgba(66, 46, 26, 0.14);
-  --ink: #24180f;
-  --muted: #655241;
-  --accent: #a33e1b;
-  --accent-soft: rgba(163, 62, 27, 0.12);
-  --accent-cool: #1d5f66;
-  --accent-cool-soft: rgba(29, 95, 102, 0.12);
+  --line: rgba(86, 61, 37, 0.18);
+  --line-strong: rgba(86, 61, 37, 0.3);
+  --ink: #24170d;
+  --muted: #5f4a3a;
+  --ink-faint: #866d5a;
+  --accent: #af6230;
+  --accent-soft: rgba(175, 98, 48, 0.12);
+  --accent-cool: #2f6f72;
+  --accent-cool-soft: rgba(47, 111, 114, 0.12);
   --good: #296038;
-  --warn: #b56d12;
-  --critical: #8f2630;
-  --shadow: 0 24px 70px rgba(45, 26, 14, 0.14);
-  --font-sans: "Trebuchet MS", "Gill Sans", "Avenir Next", sans-serif;
-  --font-serif: "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+  --warn: #c3923c;
+  --critical: #7a3640;
+  --shadow: 0 26px 70px rgba(73, 45, 18, 0.14);
+  --shadow-soft: 0 12px 28px rgba(73, 45, 18, 0.1);
 }
 
 * {
@@ -29,11 +34,11 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(29, 95, 102, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(163, 62, 27, 0.15), transparent 32%),
-    linear-gradient(180deg, #f8f2e9 0%, #efe5d4 100%);
+    radial-gradient(circle at top left, rgba(47, 111, 114, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(175, 98, 48, 0.14), transparent 34%),
+    linear-gradient(180deg, #f7efe3 0%, #f1e6d5 38%, #eadcc8 100%);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), sans-serif;
 }
 
 body::before {
@@ -41,11 +46,23 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(66, 46, 26, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(66, 46, 26, 0.03) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 95%);
+  background:
+    linear-gradient(rgba(95, 74, 58, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 74, 58, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 94%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.26), transparent 18%),
+    radial-gradient(circle at 84% 22%, rgba(255, 255, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(95, 74, 58, 0.08), transparent 24%);
+  opacity: 0.65;
 }
 
 a {
@@ -72,11 +89,15 @@ input {
 .hero {
   display: grid;
   gap: 18px;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255, 249, 240, 0.95), rgba(239, 229, 212, 0.88));
+  padding: 30px;
+  border: 1px solid rgba(86, 61, 37, 0.12);
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.56), transparent 42%),
+    var(--paper-card);
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .hero__eyebrow,
@@ -90,7 +111,7 @@ input {
 .hero h1,
 .panel__title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display), serif;
   font-size: clamp(2rem, 4vw, 4.1rem);
   line-height: 0.95;
 }
@@ -119,16 +140,16 @@ input {
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 251, 244, 0.62);
   color: var(--muted);
   font-size: 0.92rem;
 }
 
 .pill--active,
 .button--primary {
-  border-color: rgba(163, 62, 27, 0.35);
-  background: linear-gradient(135deg, #b64920, #8d3317);
-  color: #fff9f4;
+  border-color: rgba(143, 75, 31, 0.34);
+  background: linear-gradient(135deg, #b46734, #8a4720);
+  color: #fff8f2;
 }
 
 .grid {
@@ -144,11 +165,12 @@ input {
   display: grid;
   gap: 16px;
   padding: 22px;
-  border-radius: 26px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .project-list {
@@ -161,21 +183,24 @@ input {
   gap: 10px;
   padding: 16px 18px;
   border-radius: 20px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
+  box-shadow: var(--shadow-soft);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .project-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(29, 95, 102, 0.35);
-  box-shadow: 0 18px 38px rgba(29, 95, 102, 0.12);
+  border-color: rgba(175, 98, 48, 0.34);
+  box-shadow: 0 24px 36px rgba(73, 45, 18, 0.18);
 }
 
 .project-card h3,
 .side-card h3 {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display), serif;
   font-size: 1.28rem;
 }
 
@@ -188,8 +213,8 @@ input {
   width: 100%;
   padding: 14px 16px;
   border-radius: 18px;
-  border: 1px solid rgba(66, 46, 26, 0.18);
-  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(86, 61, 37, 0.16);
+  background: rgba(255, 251, 244, 0.78);
   color: var(--ink);
 }
 
@@ -202,19 +227,23 @@ input {
 .button {
   cursor: pointer;
   padding: 12px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(66, 46, 26, 0.18);
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 250, 244, 0.72);
   color: var(--ink);
-  transition: transform 180ms ease, opacity 180ms ease;
+  box-shadow: 0 6px 18px rgba(73, 45, 18, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .button:hover {
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(73, 45, 18, 0.08);
+  border-color: var(--line-strong);
 }
 
 .button--ghost {
   background: transparent;
+  box-shadow: none;
 }
 
 .explorer {
@@ -240,10 +269,14 @@ input {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   padding: 18px 20px;
-  border-radius: 24px;
-  border: 1px solid var(--line);
-  background: var(--panel-strong);
+  border-radius: 28px;
+  border: 1px solid rgba(86, 61, 37, 0.12);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.42), transparent 34%),
+    linear-gradient(180deg, rgba(251, 246, 238, 0.92), rgba(245, 236, 223, 0.82));
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .toolbar__heading {
@@ -253,7 +286,7 @@ input {
 
 .toolbar__heading h1 {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-display), serif;
   font-size: clamp(1.6rem, 2.6vw, 2.8rem);
 }
 
@@ -268,12 +301,71 @@ input {
 .flow-frame {
   position: relative;
   overflow: hidden;
-  border-radius: 28px;
-  border: 1px solid var(--line);
+  border-radius: 32px;
+  border: 1px solid rgba(86, 61, 37, 0.12);
   background:
-    linear-gradient(180deg, rgba(255, 250, 241, 0.94), rgba(238, 230, 216, 0.88)),
-    radial-gradient(circle at top left, rgba(29, 95, 102, 0.12), transparent 24%);
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.46), transparent 28%),
+    radial-gradient(circle at 84% 22%, rgba(175, 98, 48, 0.1), transparent 22%),
+    linear-gradient(180deg, rgba(246, 238, 225, 0.96), rgba(238, 226, 206, 0.92));
   box-shadow: var(--shadow);
+}
+
+.flow-frame .react-flow__controls {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(86, 61, 37, 0.16);
+  background: rgba(255, 250, 241, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.flow-frame .react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  border-color: rgba(86, 61, 37, 0.12);
+  background: rgba(255, 250, 241, 0.95);
+  color: var(--muted);
+}
+
+.flow-frame .react-flow__controls-button:hover {
+  background: rgba(243, 234, 219, 0.98);
+  color: var(--accent);
+}
+
+.flow-frame .react-flow__controls-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.flow-frame .react-flow__node {
+  cursor: pointer;
+}
+
+.flow-frame .react-flow__background {
+  opacity: 1;
+}
+
+.flow-frame .react-flow__background pattern path {
+  stroke: rgba(95, 74, 58, 0.06);
+}
+
+.atlas-overview {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.atlas-overview__svg {
+  display: block;
+}
+
+.flow-frame .react-flow__handle,
+.flow-frame .react-flow__edge,
+.flow-frame .react-flow__edge-interaction,
+.flow-frame .react-flow__edges,
+.flow-frame .react-flow__connectionline {
+  pointer-events: none;
 }
 
 .explorer__side {
@@ -287,10 +379,11 @@ input {
   gap: 14px;
   padding: 18px;
   border-radius: 24px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  backdrop-filter: blur(14px);
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .stats-grid {
@@ -302,7 +395,8 @@ input {
 .metric {
   justify-content: space-between;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 251, 246, 0.7);
+  border: 1px solid rgba(86, 61, 37, 0.1);
 }
 
 .risk-list,
@@ -320,8 +414,11 @@ input {
   gap: 10px;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(66, 46, 26, 0.16);
-  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
 }
 
 .risk-card--critical {
@@ -354,18 +451,30 @@ input {
 }
 
 .node-shell {
-  min-width: 210px;
-  max-width: 280px;
+  position: relative;
+  min-width: 220px;
+  max-width: 240px;
   padding: 14px 14px 12px;
   border-radius: 18px;
-  border: 1px solid rgba(66, 46, 26, 0.18);
-  background: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(243, 234, 219, 0.92));
-  box-shadow: 0 18px 30px rgba(53, 32, 18, 0.1);
+  border: 1px solid rgba(86, 61, 37, 0.14);
+  background: var(--paper-card);
+  box-shadow: 0 16px 30px rgba(73, 45, 18, 0.14);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  overflow: hidden;
 }
 
 .node-shell--highlighted {
-  border-color: rgba(163, 62, 27, 0.52);
-  box-shadow: 0 0 0 3px rgba(163, 62, 27, 0.16), 0 18px 30px rgba(53, 32, 18, 0.1);
+  border-color: rgba(175, 98, 48, 0.42);
+  box-shadow: 0 0 0 4px rgba(175, 98, 48, 0.14), 0 22px 34px rgba(73, 45, 18, 0.18);
+  transform: translateY(-1px);
+}
+
+.node-shell * {
+  pointer-events: none;
+  cursor: pointer;
+  user-select: none;
 }
 
 .node-shell h3 {
@@ -379,6 +488,12 @@ input {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 
 .kind-chip {
@@ -387,7 +502,7 @@ input {
   padding: 5px 8px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 80%, #5b2d15 20%);
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -410,6 +525,29 @@ input {
 
 .error-state {
   color: var(--critical);
+}
+
+.hero::after,
+.panel::after,
+.project-card::after,
+.toolbar::after,
+.side-card::after,
+.risk-card::after,
+.timeline-card::after,
+.detail-card::after,
+.node-shell::after,
+.atlas-overview::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, rgba(224, 205, 177, 0.96), rgba(244, 231, 211, 0.78));
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+  border-left: 1px solid rgba(86, 61, 37, 0.08);
+  border-bottom: 1px solid rgba(86, 61, 37, 0.08);
+  pointer-events: none;
 }
 
 @media (max-width: 1100px) {
