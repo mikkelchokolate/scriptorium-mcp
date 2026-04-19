@@ -8,9 +8,12 @@
     "build": "tsc",
     "build:web": "npm --prefix web run build",
     "build:all": "npm run build && npm run build:web",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
+    "start": "node --env-file-if-exists=.env.local dist/index.js",
+    "dev": "node --env-file-if-exists=.env.local --import tsx src/index.ts",
     "dev:web": "npm --prefix web run dev",
+    "neo4j:up": "node scripts/neo4j-compose.mjs up",
+    "neo4j:down": "node scripts/neo4j-compose.mjs down",
+    "neo4j:logs": "node scripts/neo4j-compose.mjs logs",
     "watch": "tsc --watch"
   },
   "dependencies": {

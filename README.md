@@ -56,6 +56,34 @@ For local backend development:
 npm run dev
 ```
 
+Recommended local graph setup:
+
+1. Install Docker Desktop.
+2. Create a local env file from `.env.example` or use the prefilled values below.
+3. Start only Neo4j:
+
+```bash
+npm run neo4j:up
+```
+
+4. Run Scriptorium locally:
+
+```bash
+npm run dev
+```
+
+This keeps `Neo4j` containerized while the MCP server, file-backed `projects/`, and local editing workflow continue to run directly from your checkout.
+
+Example `.env.local`:
+
+```bash
+SCRIPTORIUM_GRAPH_HOST=0.0.0.0
+SCRIPTORIUM_GRAPH_PORT=4319
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=scriptorium_password
+```
+
 Build the full stack:
 
 ```bash
@@ -91,6 +119,12 @@ The backend now exposes a live graph capability layer alongside MCP:
 ## Docker
 
 The repository includes `Dockerfile` and `docker-compose.yml` for running the MCP server and graph API with an optional Neo4j service.
+
+For day-to-day development, the recommended path is:
+
+- run only `neo4j` from Compose with `npm run neo4j:up`
+- keep `scriptorium-mcp` running locally with `npm run dev`
+- stop the database with `npm run neo4j:down`
 
 ## Repository layout
 
