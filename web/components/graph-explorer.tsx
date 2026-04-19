@@ -26,7 +26,7 @@ import {
 
 import { ScriptoriumNode } from "@/components/scriptorium-node";
 import { createGraphSocket, fetchJson } from "@/lib/graph-client";
-import { alternateLocale, localeName, t, type AppLocale } from "@/lib/i18n";
+import { APP_LOCALES, localeName, t, type AppLocale } from "@/lib/i18n";
 import type {
   GraphBroadcastMessage,
   GraphCapabilitiesDTO,
@@ -290,8 +290,15 @@ export function GraphExplorer({ locale, project }: { locale: AppLocale; project:
           </div>
 
           <div className="toolbar__actions">
-            <Link className="pill pill--active" href={`/${locale}/project/${encodeURIComponent(project)}`}>{localeName(locale)}</Link>
-            <Link className="pill" href={`/${alternateLocale(locale)}/project/${encodeURIComponent(project)}`}>{localeName(alternateLocale(locale))}</Link>
+            {APP_LOCALES.map((nextLocale) => (
+              <Link
+                key={nextLocale}
+                className={`pill ${nextLocale === locale ? "pill--active" : ""}`}
+                href={`/${nextLocale}/project/${encodeURIComponent(project)}`}
+              >
+                {localeName(nextLocale)}
+              </Link>
+            ))}
             <button className="button" type="button" onClick={handleRefresh}>{t(locale, "refresh")}</button>
             <button className="button button--ghost" type="button" onClick={() => router.push(`/${locale}`)}>{t(locale, "back")}</button>
             <input

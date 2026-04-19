@@ -269,7 +269,7 @@ const dictionaries = {
       stats: [
         ["World Bible", "A canonical folio for setting memory, rules, factions, themes, and story context."],
         ["Story Atlas", "A browser map of characters, lore facts, chapter anchors, and relationship lines."],
-        ["RU / EN", "One canonical model rendered in English and Russian across UI, graph labels, and forecasts."],
+        ["Multilingual", "One canonical model can render across UI, graph labels, and forecasts without splitting the story system."],
         ["10 chapters", "A bounded continuity horizon for temporal and causal plot-risk detection."],
       ],
       events: [
@@ -445,7 +445,7 @@ const dictionaries = {
       surfaces: [
         ["A", "For writers", "The surface language stays close to books, scenes, chapters, and memory rather than abstract ops jargon."],
         ["B", "For teams", "Editors and technical evaluators can still see the engine room, API surface, and deployment posture."],
-        ["C", "For localization", "English and Russian are modeled as views over one canonical story system."],
+        ["C", "For localization", "Locales stay layered over one canonical story system, so new languages extend the surface instead of forking the model."],
         ["D", "For safe publishing", "A public repo and public Pages site do not expose local manuscript data because the workspace stays ignored."],
       ],
     },
@@ -469,7 +469,7 @@ const dictionaries = {
         "ws://localhost:4319/ws/projects/<project>/graph?locale=en",
       ].join("\n"),
     },
-    footer: "Scriptorium MCP public atelier. File-first writing, a living book graph, bilingual presentation, and continuity intelligence for serious long-form projects.",
+    footer: "Scriptorium MCP public atelier. File-first writing, a living book graph, multilingual presentation, and continuity intelligence for serious long-form projects.",
   },
   ru: {
     pageTitle: "Scriptorium MCP | Писательская студия для живых книг",
@@ -497,7 +497,7 @@ const dictionaries = {
       stats: [
         ["World Bible", "Каноническое досье для памяти мира, правил, фракций, тем и контекста истории."],
         ["Story Atlas", "Браузерная карта персонажей, lore facts, chapter anchors и линий отношений."],
-        ["RU / EN", "Одна каноническая модель, которая рендерится на русском и английском в UI, графе и прогнозах."],
+        ["Мультиязычность", "Одна каноническая модель рендерится в UI, графе и прогнозах без разветвления самой story system."],
         ["10 глав", "Ограниченный горизонт для temporal и causal анализа рисков сюжета."],
       ],
       events: [
@@ -673,7 +673,7 @@ const dictionaries = {
       surfaces: [
         ["A", "Для автора", "Язык поверхности остаётся близким к книге, сценам, главам и памяти мира, а не к абстрактным ops-терминам."],
         ["B", "Для команды", "Редактор и технический оценщик всё ещё видят engine room, API-поверхность и deployment posture."],
-        ["C", "Для локализации", "Русский и английский живут как представления над одной канонической story system."],
+        ["C", "Для локализации", "Локали остаются слоем над одной канонической story system, поэтому новые языки расширяют поверхность, а не дублируют модель."],
         ["D", "Для безопасной публикации", "Публичный репозиторий и публичный Pages-сайт не раскрывают локальные manuscript-данные."],
       ],
     },
@@ -697,9 +697,26 @@ const dictionaries = {
         "ws://localhost:4319/ws/projects/<project>/graph?locale=ru",
       ].join("\n"),
     },
-    footer: "Публичная atelier-витрина Scriptorium MCP. File-first письмо, живой граф книги, двуязычная подача и continuity intelligence для серьёзных long-form проектов.",
+    footer: "Публичная atelier-витрина Scriptorium MCP. File-first письмо, живой граф книги, мультиязычная подача и continuity intelligence для серьёзных long-form проектов.",
   },
 };
+
+const defaultLocale = "en";
+const supportedLocales = Object.keys(dictionaries);
+
+function isSupportedLocale(locale) {
+  return typeof locale === "string" && supportedLocales.includes(locale);
+}
+
+function normalizeLocale(locale) {
+  if (!locale) return defaultLocale;
+
+  const normalized = String(locale).trim().toLowerCase();
+  if (isSupportedLocale(normalized)) return normalized;
+
+  const baseLocale = normalized.split("-")[0];
+  return supportedLocales.find((candidate) => candidate.toLowerCase() === baseLocale) ?? defaultLocale;
+}
 
 const state = {
   locale: detectLocale(),
@@ -773,13 +790,13 @@ const elements = {
   commandCard: document.getElementById("command-card"),
   footerCopy: document.getElementById("footer-copy"),
   panels: Array.from(document.querySelectorAll(".demo-panel")),
-  localeButtons: Array.from(document.querySelectorAll(".locale-switch__button")),
+  localeSwitch: document.getElementById("locale-switch"),
 };
 
 function detectLocale() {
   const saved = window.localStorage.getItem("scriptorium-pages-locale");
-  if (saved === "en" || saved === "ru") return saved;
-  return navigator.language.toLowerCase().startsWith("ru") ? "ru" : "en";
+  if (isSupportedLocale(saved)) return saved;
+  return normalizeLocale(navigator.language);
 }
 
 function escapeHtml(value) {
@@ -791,18 +808,19 @@ function escapeHtml(value) {
 }
 
 function getDictionary() {
-  return dictionaries[state.locale];
+  return dictionaries[state.locale] ?? dictionaries[defaultLocale];
 }
 
 function render() {
   const dict = getDictionary();
-  document.documentElement.lang = state.locale;
+  document.documentElement.lang = normalizeLocale(state.locale);
   document.title = dict.pageTitle;
 
   elements.brandTagline.textContent = dict.brandTagline;
   elements.repoLink.textContent = dict.repoButton;
   elements.repoLink.href = repoUrl;
 
+  renderLocaleSwitch();
   renderNav(dict);
   renderHero(dict);
   renderOverview(dict);
@@ -811,10 +829,18 @@ function render() {
   renderArchitecture(dict);
   renderLaunch(dict);
   renderFooter(dict);
+}
 
-  elements.localeButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.locale === state.locale);
-  });
+function renderLocaleSwitch() {
+  if (!(elements.localeSwitch instanceof HTMLElement)) return;
+
+  elements.localeSwitch.innerHTML = supportedLocales
+    .map((locale) => `
+      <button class="locale-switch__button ${locale === state.locale ? "is-active" : ""}" data-locale="${escapeHtml(locale)}" type="button">
+        ${escapeHtml(locale.toUpperCase())}
+      </button>
+    `)
+    .join("");
 }
 
 function renderNav(dict) {
@@ -980,7 +1006,7 @@ function renderBadges(target, items) {
 function renderNodes(target, mode) {
   target.innerHTML = graphNodes
     .map((node) => {
-      const localized = node.labels[state.locale];
+      const localized = node.labels[state.locale] ?? node.labels[defaultLocale] ?? Object.values(node.labels)[0];
       const position = mode === "hero" ? node.heroPosition : node.panelPosition;
       const tilt = mode === "hero" ? node.heroTilt : node.panelTilt;
       return `
@@ -1076,7 +1102,7 @@ function projectPointFromRect(rect, towardX, towardY, gap = 0) {
 
 function renderInspector(label) {
   const node = graphNodes.find((item) => item.id === state.activeNode) ?? graphNodes[0];
-  const localized = node.labels[state.locale];
+  const localized = node.labels[state.locale] ?? node.labels[defaultLocale] ?? Object.values(node.labels)[0];
   elements.graphInspector.innerHTML = `
     <div class="eyebrow">${escapeHtml(label)}</div>
     <h3>${escapeHtml(localized.title)}</h3>
@@ -1166,7 +1192,7 @@ function installEvents() {
     const localeButton = event.target.closest("[data-locale]");
     if (localeButton instanceof HTMLElement) {
       const locale = localeButton.dataset.locale;
-      if (locale === "en" || locale === "ru") {
+      if (isSupportedLocale(locale)) {
         state.locale = locale;
         window.localStorage.setItem("scriptorium-pages-locale", locale);
         render();

@@ -2,6 +2,7 @@ import fs from "fs-extra";
 import path from "path";
 
 import { createProjectService, type ProjectService } from "../../services/project-service.js";
+import type { LocalizedTextMap } from "../../core/i18n/locales.js";
 import type { LoreService } from "../../services/lore-service.js";
 import type { Contradiction, LoreFact, RelationEdge, TimelineEvent } from "../../core/domain/entities.js";
 import type {
@@ -12,7 +13,7 @@ import type {
   GraphLocale,
 } from "./graph-dtos.js";
 import { resolveGraphText } from "./graph-localization.js";
-import { clampForecastHorizon, slugifyGraphId, uniqueNumbers } from "./graph-utils.js";
+import { clampForecastHorizon, normalizeGraphLocale, slugifyGraphId, uniqueNumbers } from "./graph-utils.js";
 
 type ForecastOptions = {
   locale?: GraphLocale;
@@ -25,10 +26,6 @@ type OutlineRecord = {
 
 type RiskSeverity = GraphForecastRiskDTO["severity"];
 
-function normalizeLocale(locale?: string): GraphLocale {
-  return locale === "ru" ? "ru" : "en";
-}
-
 function severityScore(severity: RiskSeverity): number {
   if (severity === "critical") return 3;
   if (severity === "warning") return 2;
@@ -38,7 +35,7 @@ function severityScore(severity: RiskSeverity): number {
 function buildEvidence(
   locale: GraphLocale,
   kind: GraphForecastEvidenceDTO["kind"],
-  values: { en: string; ru: string },
+  values: LocalizedTextMap,
   options: { chapter?: number; nodeIds?: string[]; edgeIds?: string[] } = {},
 ): GraphForecastEvidenceDTO {
   return {
@@ -58,7 +55,7 @@ export class GraphForecastingService {
   ) {}
 
   public async forecastProject(project: string, options: ForecastOptions = {}): Promise<GraphForecastResponseDTO> {
-    const locale = normalizeLocale(options.locale);
+    const locale = normalizeGraphLocale(options.locale);
     const horizon = clampForecastHorizon(options.horizon);
 
     const [facts, outline, chapters, timelineEvents, causalRelations, contradictions] = await Promise.all([

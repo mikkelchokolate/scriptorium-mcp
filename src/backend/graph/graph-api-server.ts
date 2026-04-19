@@ -2,19 +2,15 @@ import http from "http";
 import { URL } from "url";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import type { GraphLocale } from "./graph-dtos.js";
 import { GraphEventStreamService } from "./graph-event-stream-service.js";
 import { GraphQueryService } from "./graph-query-service.js";
+import { normalizeGraphLocale } from "./graph-utils.js";
 
 type GraphApiServerOptions = {
   host?: string;
   port?: number;
   corsOrigin?: string;
 };
-
-function normalizeLocale(locale?: string): GraphLocale {
-  return locale === "ru" ? "ru" : "en";
-}
 
 export class GraphApiServer {
   private server?: http.Server;
@@ -91,7 +87,7 @@ export class GraphApiServer {
       const graphMatch = pathname.match(/^\/api\/projects\/([^/]+)\/graph$/);
       if (graphMatch) {
         const project = decodeURIComponent(graphMatch[1]);
-        const locale = normalizeLocale(requestUrl.searchParams.get("locale") ?? undefined);
+        const locale = normalizeGraphLocale(requestUrl.searchParams.get("locale") ?? undefined);
         this.writeJson(res, 200, await this.queryService.getSnapshot(project, { locale }));
         return;
       }
@@ -99,7 +95,7 @@ export class GraphApiServer {
       const timelineMatch = pathname.match(/^\/api\/projects\/([^/]+)\/graph\/timeline$/);
       if (timelineMatch) {
         const project = decodeURIComponent(timelineMatch[1]);
-        const locale = normalizeLocale(requestUrl.searchParams.get("locale") ?? undefined);
+        const locale = normalizeGraphLocale(requestUrl.searchParams.get("locale") ?? undefined);
         this.writeJson(res, 200, await this.queryService.getTimeline(project, { locale }));
         return;
       }
@@ -107,7 +103,7 @@ export class GraphApiServer {
       const forecastMatch = pathname.match(/^\/api\/projects\/([^/]+)\/graph\/forecast$/);
       if (forecastMatch) {
         const project = decodeURIComponent(forecastMatch[1]);
-        const locale = normalizeLocale(requestUrl.searchParams.get("locale") ?? undefined);
+        const locale = normalizeGraphLocale(requestUrl.searchParams.get("locale") ?? undefined);
         const horizonRaw = Number(requestUrl.searchParams.get("horizon") ?? "10");
         this.writeJson(res, 200, await this.queryService.getForecast(project, { locale, horizon: horizonRaw }));
         return;
@@ -128,7 +124,7 @@ export class GraphApiServer {
     }
 
     const project = decodeURIComponent(wsMatch[1]);
-    const locale = normalizeLocale(requestUrl.searchParams.get("locale") ?? undefined);
+    const locale = normalizeGraphLocale(requestUrl.searchParams.get("locale") ?? undefined);
 
     this.webSocketServer.handleUpgrade(req, socket, head, (ws: WebSocket) => {
       void this.eventStreamService.registerSocket(ws, project, locale);

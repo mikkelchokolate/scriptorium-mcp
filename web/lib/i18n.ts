@@ -112,21 +112,42 @@ const dictionaries = {
 } as const;
 
 export type AppLocale = keyof typeof dictionaries;
+export const APP_LOCALES = Object.keys(dictionaries) as AppLocale[];
+export const DEFAULT_APP_LOCALE = "en" as AppLocale;
+
+const localeLabels: Partial<Record<AppLocale, string>> = {
+  en: "English",
+  ru: "Русский",
+};
+
+type AppDictionary = typeof dictionaries[typeof DEFAULT_APP_LOCALE];
+export type AppTranslationKey = keyof AppDictionary;
 
 export function isSupportedLocale(locale: string): locale is AppLocale {
-  return locale === "en" || locale === "ru";
+  return Object.prototype.hasOwnProperty.call(dictionaries, locale);
 }
 
-export function alternateLocale(locale: AppLocale): AppLocale {
-  return locale === "en" ? "ru" : "en";
+export function otherLocales(locale: AppLocale): AppLocale[] {
+  return APP_LOCALES.filter((candidate) => candidate !== locale);
 }
 
-export function localeName(locale: AppLocale): string {
-  return locale === "en" ? "English" : "Русский";
+export function localeName(locale: string): string {
+  if (isSupportedLocale(locale) && localeLabels[locale]) {
+    return localeLabels[locale]!;
+  }
+
+  const normalized = locale.split("-")[0];
+  try {
+    const displayNames = new Intl.DisplayNames([DEFAULT_APP_LOCALE], { type: "language" });
+    return displayNames.of(normalized) ?? locale.toUpperCase();
+  } catch {
+    return locale.toUpperCase();
+  }
 }
 
-export function t(locale: AppLocale, key: keyof typeof dictionaries.en, params?: Record<string, string>): string {
-  let template = String(dictionaries[locale][key]);
+export function t(locale: AppLocale, key: AppTranslationKey, params?: Record<string, string>): string {
+  const dictionary = dictionaries[locale] ?? dictionaries[DEFAULT_APP_LOCALE];
+  let template = String(dictionary[key] ?? dictionaries[DEFAULT_APP_LOCALE][key]);
   if (!params) return template;
   for (const [paramKey, value] of Object.entries(params)) {
     template = template.replaceAll(`{{${paramKey}}}`, value);

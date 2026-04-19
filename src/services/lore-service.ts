@@ -2,6 +2,7 @@ import neo4j, { Driver } from 'neo4j-driver';
 import { randomUUID } from 'crypto';
 import { ScriptoriumError, logOperation } from '../utils/error-handler.js';
 import type { ScriptoriumEventBus } from '../utils/event-bus.js';
+import { localizedTextValues } from '../core/i18n/locales.js';
 import type {
   EntityNode,
   RelationEdge,
@@ -28,7 +29,7 @@ import { embedText } from '../utils/text-embedding.js';
  * - driver.executeQuery (Neo4j 5.x) — no manual session management
  * - Full domain model: id, provenance, confidence, version, aliases, properties
  * - Temporal + causal graph foundations for future explorer/timeline APIs
- * - RU/EN localization fields stored as derived graph metadata
+ * - Localized fields stored as derived graph metadata
  * - Semantic contradiction detection (alive/dead, timeline, orphans, alias conflicts)
  * - Path analysis, centrality, temporal queries
  * - autoExtractAndRegisterFacts() — auto-extract entities from chapter text
@@ -204,8 +205,8 @@ export class LoreService {
     const temporal = normalizeTemporalMetadata(input.temporal);
     const causal = normalizeCausalMetadata(input.causal);
 
-    const localizedNameParts = [input.localized?.name?.en, input.localized?.name?.ru].filter(Boolean);
-    const localizedObservationParts = (input.localized?.observations ?? []).flatMap(item => [item.en, item.ru]).filter(Boolean);
+    const localizedNameParts = localizedTextValues(input.localized?.name);
+    const localizedObservationParts = (input.localized?.observations ?? []).flatMap((item) => localizedTextValues(item));
     const toEmbed = [
       input.name,
       ...(input.aliases ?? []),

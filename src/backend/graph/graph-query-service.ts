@@ -16,16 +16,18 @@ import type {
 } from "./graph-dtos.js";
 import { GraphProjectionService } from "./graph-projection.js";
 import { GraphForecastingService } from "./graph-forecasting-service.js";
-import { localizeGraphString, resolveGraphText } from "./graph-localization.js";
-import { MAX_FORECAST_HORIZON, SUPPORTED_GRAPH_LOCALES, slugifyGraphId, uniqueNumbers } from "./graph-utils.js";
+import { localizeGraphString, resolveLocalizedGraphText } from "./graph-localization.js";
+import {
+  DEFAULT_GRAPH_LOCALE,
+  MAX_FORECAST_HORIZON,
+  SUPPORTED_GRAPH_LOCALES,
+  normalizeGraphLocale,
+  slugifyGraphId,
+} from "./graph-utils.js";
 
 type QueryOptions = {
   locale?: GraphLocale;
 };
-
-function normalizeLocale(locale?: string): GraphLocale {
-  return locale === "ru" ? "ru" : "en";
-}
 
 function toTemporalDTO(input?: {
   start?: string;
@@ -68,10 +70,7 @@ function toCausalDTO(input?: {
 }
 
 function resolveLocalizedFactText(locale: GraphLocale, text: LocalizedText | undefined, fallback: string) {
-  return resolveGraphText(locale, {
-    en: text?.en?.trim() || fallback,
-    ru: text?.ru?.trim() || fallback,
-  });
+  return resolveLocalizedGraphText(locale, text, fallback);
 }
 
 export class GraphQueryService {
@@ -92,7 +91,7 @@ export class GraphQueryService {
   }
 
   public async getTimeline(project: string, options: QueryOptions = {}): Promise<GraphTimelineResponseDTO> {
-    const locale = normalizeLocale(options.locale);
+    const locale = normalizeGraphLocale(options.locale);
     const entries = this.loreService?.isConnected
       ? await this.getNeo4jTimeline(project, locale)
       : await this.getFileTimeline(project, locale);
@@ -130,7 +129,7 @@ export class GraphQueryService {
   public getCapabilities(): GraphCapabilitiesDTO {
     return {
       locales: [...SUPPORTED_GRAPH_LOCALES],
-      defaultLocale: "en",
+      defaultLocale: DEFAULT_GRAPH_LOCALE,
       neo4jConnected: Boolean(this.loreService?.isConnected),
       forecastingAvailable: true,
       liveUpdatesAvailable: true,

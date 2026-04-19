@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/graph-client";
-import { alternateLocale, localeName, t, type AppLocale } from "@/lib/i18n";
+import { APP_LOCALES, localeName, t, type AppLocale } from "@/lib/i18n";
 import type { GraphCapabilitiesDTO, GraphProjectSummaryDTO } from "@/lib/types";
 
 export function HomePage({ locale }: { locale: AppLocale }) {
@@ -55,12 +55,15 @@ export function HomePage({ locale }: { locale: AppLocale }) {
       <section className="hero">
         <div className="hero__eyebrow">{t(locale, "heroEyebrow")}</div>
         <div className="locale-toggle">
-          <Link className="pill pill--active" href={`/${locale}`}>
-            {localeName(locale)}
-          </Link>
-          <Link className="pill" href={`/${alternateLocale(locale)}`}>
-            {localeName(alternateLocale(locale))}
-          </Link>
+          {APP_LOCALES.map((nextLocale) => (
+            <Link
+              key={nextLocale}
+              className={`pill ${nextLocale === locale ? "pill--active" : ""}`}
+              href={`/${nextLocale}`}
+            >
+              {localeName(nextLocale)}
+            </Link>
+          ))}
         </div>
         <h1>{t(locale, "heroTitle")}</h1>
         <p>{t(locale, "heroCopy")}</p>
@@ -124,7 +127,7 @@ export function HomePage({ locale }: { locale: AppLocale }) {
             </div>
             <div className="metric">
               <span>{t(locale, "locales")}</span>
-              <strong>{capabilities?.locales.join(", ") || "en, ru"}</strong>
+              <strong>{capabilities?.locales.join(", ") || APP_LOCALES.join(", ")}</strong>
             </div>
           </div>
         </div>

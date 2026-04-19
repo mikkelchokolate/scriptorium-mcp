@@ -1,4 +1,6 @@
-export type GraphLocale = "en" | "ru";
+import type { LocaleCode, LocalizedTextMap } from "../../core/i18n/locales.js";
+
+export type GraphLocale = LocaleCode;
 
 export type GraphSourceKind = "canonical" | "neo4j" | "derived" | "empty";
 
@@ -14,15 +16,13 @@ export type GraphNodeKind =
   | "constraint"
   | "unknown";
 
-export interface GraphLocalizedText {
-  en?: string;
-  ru?: string;
-}
+export type GraphLocalizedText = LocalizedTextMap;
 
-export interface GraphResolvedText extends GraphLocalizedText {
+export interface GraphResolvedText {
   locale: GraphLocale;
   value: string;
   fallbackLocale: GraphLocale;
+  translations: Record<string, string>;
 }
 
 export interface GraphTemporalDTO {

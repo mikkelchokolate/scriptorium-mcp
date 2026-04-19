@@ -1,12 +1,11 @@
-export type GraphLocale = "en" | "ru";
+export type GraphLocale = string;
 export type GraphSourceKind = "canonical" | "neo4j" | "derived" | "empty";
 
 export interface GraphResolvedText {
-  en?: string;
-  ru?: string;
   locale: GraphLocale;
   value: string;
   fallbackLocale: GraphLocale;
+  translations: Record<string, string>;
 }
 
 export interface GraphTemporalDTO {

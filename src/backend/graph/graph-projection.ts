@@ -25,7 +25,8 @@ import type {
   GraphSourceKind,
   GraphTemporalDTO,
 } from "./graph-dtos.js";
-import { localizeGraphString, otherGraphLocale, resolveGraphText } from "./graph-localization.js";
+import { localizeGraphString, resolveLocalizedGraphText } from "./graph-localization.js";
+import { normalizeGraphLocale } from "./graph-utils.js";
 
 type CharacterFileRecord = {
   name: string;
@@ -68,16 +69,8 @@ function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "") || "item";
 }
 
-function normalizeLocale(locale?: string): GraphLocale {
-  return locale === "ru" ? "ru" : "en";
-}
-
 function localizeText(text: LocalizedText | undefined, locale: GraphLocale, fallbackValue: string): GraphResolvedText {
-  const fallback = localizeGraphString(fallbackValue, locale, fallbackValue);
-  return resolveGraphText(locale, {
-    en: text?.en?.trim() || fallback.en || fallbackValue,
-    ru: text?.ru?.trim() || fallback.ru || fallbackValue,
-  });
+  return resolveLocalizedGraphText(locale, text, fallbackValue);
 }
 
 function localizeString(text: string | undefined, locale: GraphLocale, fallbackValue: string): GraphResolvedText {
@@ -154,7 +147,7 @@ export class GraphProjectionService {
   ) {}
 
   public async buildSnapshot(project: string, options: GraphProjectionOptions = {}): Promise<GraphProjectionSnapshotDTO> {
-    const locale = normalizeLocale(options.locale);
+    const locale = normalizeGraphLocale(options.locale);
     const connected = options.includeNeo4j !== false && Boolean(this.loreService?.isConnected);
     const warnings: string[] = [];
 

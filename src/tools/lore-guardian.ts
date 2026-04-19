@@ -12,6 +12,7 @@ import type {
   CausalMetadata,
 } from "../core/domain/entities.js";
 import { makeProvenance } from "../core/domain/entities.js";
+import { LOCALE_CODE_PATTERN } from "../core/i18n/locales.js";
 
 const factCategories = [
   "character",
@@ -28,10 +29,10 @@ const factCategories = [
   "other",
 ] as const;
 
-const localizedTextSchema = z.object({
-  en: z.string().min(1).max(500).optional(),
-  ru: z.string().min(1).max(500).optional(),
-}).refine((value) => Boolean(value.en || value.ru), {
+const localizedTextSchema = z.record(
+  z.string().regex(LOCALE_CODE_PATTERN, "Locale keys must use language tags such as en or ru."),
+  z.string().min(1).max(500),
+).refine((value) => Object.keys(value).length > 0, {
   message: "At least one localized value is required.",
 });
 

@@ -6,6 +6,8 @@
  * Single source of truth — no duplication across modules.
  */
 
+import type { LocalizedTextMap } from "../i18n/locales.js";
+
 // ─── Provenance ───────────────────────────────────────────────────────────────
 
 export type ProvenanceSource =
@@ -24,10 +26,7 @@ export interface Provenance {
 
 // ─── Localization & Temporal/Causal Metadata ──────────────────────────────────
 
-export interface LocalizedText {
-  ru?: string;
-  en?: string;
-}
+export type LocalizedText = LocalizedTextMap;
 
 export type TemporalPrecision = 'exact' | 'approximate' | 'inferred' | 'unknown';
 export type TimelineAxis = 'story_time' | 'narration_time' | 'publication_time';
@@ -82,7 +81,7 @@ export interface EntityNode {
   observations: string[];              // Free-text facts about this entity
   aliases: string[];                   // Alternative names / spellings
   properties: Record<string, string>;  // Typed key-value pairs from ontology
-  localized?: EntityLocalization;      // RU/EN structured fields for explorer/UI layers
+  localized?: EntityLocalization;      // Structured fields for explorer/UI layers
   temporal?: TemporalMetadata;         // Optional temporal placement / validity window
   causal?: CausalMetadata;             // Optional causal metadata where entity acts as state/risk anchor
   confidence: number;                  // 0.0–1.0 overall confidence
@@ -103,7 +102,7 @@ export interface RelationEdge {
   type: string;                        // UPPER_SNAKE_CASE (from ontology)
   project: string;
   properties: Record<string, string>;
-  localized?: RelationLocalization;    // RU/EN labels and property translations
+  localized?: RelationLocalization;    // Localized labels and property translations
   temporal?: TemporalMetadata;         // Optional relation interval/chapter span metadata
   causal?: CausalMetadata;             // Optional causal reasoning metadata
   confidence: number;
