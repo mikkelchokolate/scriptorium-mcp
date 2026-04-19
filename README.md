@@ -13,6 +13,12 @@ Scriptorium MCP is a file-first writing workspace for fiction projects. It expos
 - Temporal and causal forecast layer for detecting near-future plot-hole risk
 - Next.js + React Flow web explorer under `web/`
 
+## Public Showcase
+
+- GitHub Pages showcase: `https://mikkelchokolate.github.io/scriptorium-mcp/`
+- Static site source: `docs/`
+- The Pages site is a polished public walkthrough; the live explorer itself still runs against the local or hosted graph API and WebSocket service
+
 ## Core tools
 
 - `project_manager`
