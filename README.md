@@ -50,6 +50,8 @@ npm run build
 npm start
 ```
 
+`dist/index.js` now auto-loads `.env` and `.env.local` from the repository root, so direct launches from MCP clients such as Roo do not need a separate `--env-file` wrapper.
+
 For local backend development:
 
 ```bash
@@ -82,6 +84,8 @@ SCRIPTORIUM_GRAPH_PORT=4319
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=scriptorium_password
+SCRIPTORIUM_WEB_AUTOSTART=1
+SCRIPTORIUM_WEB_PORT=3000
 ```
 
 Build the full stack:
@@ -90,13 +94,15 @@ Build the full stack:
 npm run build:all
 ```
 
-Run the web explorer:
+Run the web explorer manually:
 
 ```bash
 cd web
 npm install
 npm run dev
 ```
+
+When `web/` dependencies are installed, the backend also auto-starts the local web explorer on `http://localhost:3000` by default. Disable that behavior with `SCRIPTORIUM_WEB_AUTOSTART=0`.
 
 The graph service defaults to `http://localhost:4319` and the Next.js app can connect to it with:
 

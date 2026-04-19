@@ -15,7 +15,7 @@ ENV SCRIPTORIUM_PROJECTS=/data/projects \
     SCRIPTORIUM_GRAPH_PORT=4319 \
     NEO4J_URI=bolt://neo4j:7687 \
     NEO4J_USERNAME=neo4j \
-    NEO4J_PASSWORD=password
+    NEO4J_PASSWORD=scriptorium_password
 
 VOLUME ["/data/projects"]
 
