@@ -25,23 +25,30 @@ export class GraphApiServer {
   public async start(): Promise<void> {
     if (this.server) return;
 
-    this.server = http.createServer((req, res) => {
+    const server = http.createServer((req, res) => {
       void this.handleRequest(req, res);
     });
+    this.server = server;
 
-    this.server.on("upgrade", (req, socket, head) => {
+    server.on("upgrade", (req, socket, head) => {
       void this.handleUpgrade(req, socket, head);
     });
 
     const host = this.options.host ?? "0.0.0.0";
     const port = this.options.port ?? 4319;
-    await new Promise<void>((resolve, reject) => {
-      this.server!.once("error", reject);
-      this.server!.listen(port, host, () => {
-        this.server!.off("error", reject);
-        resolve();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(port, host, () => {
+          server.off("error", reject);
+          resolve();
+        });
       });
-    });
+    } catch (error) {
+      server.removeAllListeners();
+      this.server = undefined;
+      throw error;
+    }
   }
 
   public async close(): Promise<void> {

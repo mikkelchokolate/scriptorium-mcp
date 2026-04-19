@@ -35,9 +35,31 @@ const projectService = createProjectService(PROJECTS_ROOT);
 const graphPort = Number(process.env.SCRIPTORIUM_GRAPH_PORT ?? "4319");
 const graphHost = process.env.SCRIPTORIUM_GRAPH_HOST ?? "0.0.0.0";
 const serverMessages = getMcpMessages(SERVER_LOCALE).server;
+const resolvedGraphPort = Number.isFinite(graphPort) ? graphPort : 4319;
 
 function resourceLocale(uri: URL): string {
   return resolveRequestLocale({ locale: uri.searchParams.get("locale") ?? undefined });
+}
+
+function graphProbeBaseUrl(host: string, port: number): string {
+  if (host === "0.0.0.0") return `http://127.0.0.1:${port}`;
+  if (host === "::") return `http://[::1]:${port}`;
+  return `http://${host}:${port}`;
+}
+
+async function isExistingGraphApiAvailable(host: string, port: number): Promise<boolean> {
+  try {
+    const response = await fetch(`${graphProbeBaseUrl(host, port)}/api/capabilities`);
+    if (!response.ok) return false;
+
+    const payload = await response.json() as Record<string, unknown>;
+    return Array.isArray(payload.locales)
+      && typeof payload.defaultLocale === "string"
+      && payload.websocketPath === "/ws/projects/:project/graph"
+      && payload.projectsPath === "/api/projects";
+  } catch {
+    return false;
+  }
 }
 
 await fs.ensureDir(PROJECTS_ROOT);
@@ -61,15 +83,20 @@ const graphQueryService = new GraphQueryService(PROJECTS_ROOT, projectService, l
 const graphEventStreamService = new GraphEventStreamService(graphQueryService, eventBus);
 const graphApiServer = new GraphApiServer(graphQueryService, graphEventStreamService, {
   host: graphHost,
-  port: Number.isFinite(graphPort) ? graphPort : 4319,
+  port: resolvedGraphPort,
   corsOrigin: process.env.SCRIPTORIUM_GRAPH_CORS_ORIGIN ?? "*",
 });
 
 try {
   await graphApiServer.start();
-  console.error(`[Scriptorium] Graph Explorer API listening on http://${graphHost}:${Number.isFinite(graphPort) ? graphPort : 4319}`);
+  console.error(`[Scriptorium] Graph Explorer API listening on http://${graphHost}:${resolvedGraphPort}`);
 } catch (error) {
-  console.error(`[Scriptorium] Graph Explorer API unavailable: ${String(error)}`);
+  const errorCode = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  if (errorCode === "EADDRINUSE" && await isExistingGraphApiAvailable(graphHost, resolvedGraphPort)) {
+    console.error(`[Scriptorium] Graph Explorer API already running at ${graphProbeBaseUrl(graphHost, resolvedGraphPort)}; reusing existing instance.`);
+  } else {
+    console.error(`[Scriptorium] Graph Explorer API unavailable: ${String(error)}`);
+  }
 }
 
 const server = new McpServer({
