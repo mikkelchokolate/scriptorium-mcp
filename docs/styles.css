@@ -510,7 +510,12 @@ p {
 }
 
 .network-board--detail {
-  min-height: 520px;
+  min-height: 600px;
+  --detail-node-shift-y: 44px;
+}
+
+.network-board--detail .node-layer {
+  transform: translateY(var(--detail-node-shift-y));
 }
 
 .network-lines {
@@ -1211,7 +1216,8 @@ p {
   }
 
   .network-board--detail {
-    min-height: 430px;
+    min-height: 500px;
+    --detail-node-shift-y: 30px;
   }
 
   .graph-node {
