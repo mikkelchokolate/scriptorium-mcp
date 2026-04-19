@@ -1,4 +1,5 @@
 const repoUrl = "https://github.com/mikkelchokolate/scriptorium-mcp";
+const atlasConnections = ["bible", "cast", "chapters", "lore", "temporal", "forecast"];
 
 const graphNodes = [
   {
@@ -997,6 +998,80 @@ function renderNodes(target, mode) {
       `;
     })
     .join("");
+
+  scheduleNetworkLines(target);
+}
+
+function scheduleNetworkLines(target) {
+  window.requestAnimationFrame(() => renderNetworkLines(target));
+}
+
+function renderNetworkLines(target) {
+  if (!(target instanceof HTMLElement)) return;
+
+  const board = target.parentElement;
+  if (!(board instanceof HTMLElement) || board.offsetParent === null) return;
+
+  const svg = board.querySelector(".network-lines");
+  if (!(svg instanceof SVGSVGElement)) return;
+
+  const boardRect = board.getBoundingClientRect();
+  if (boardRect.width === 0 || boardRect.height === 0) return;
+
+  const sourceElement = target.querySelector('[data-node="atlas"]');
+  if (!(sourceElement instanceof HTMLElement)) return;
+
+  const sourceRect = getNodeRect(sourceElement, boardRect);
+
+  const paths = atlasConnections
+    .map((nodeId) => {
+      const targetElement = target.querySelector(`[data-node="${nodeId}"]`);
+      if (!(targetElement instanceof HTMLElement)) return "";
+
+      const targetRect = getNodeRect(targetElement, boardRect);
+      const start = projectPointFromRect(sourceRect, targetRect.centerX, targetRect.centerY, 8);
+      const end = projectPointFromRect(targetRect, sourceRect.centerX, sourceRect.centerY, 8);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const control1X = start.x + dx * 0.26;
+      const control1Y = start.y + dy * 0.12;
+      const control2X = end.x - dx * 0.26;
+      const control2Y = end.y - dy * 0.12;
+
+      return `<path d="M ${start.x.toFixed(1)} ${start.y.toFixed(1)} C ${control1X.toFixed(1)} ${control1Y.toFixed(1)} ${control2X.toFixed(1)} ${control2Y.toFixed(1)} ${end.x.toFixed(1)} ${end.y.toFixed(1)}"></path>`;
+    })
+    .join("");
+
+  svg.setAttribute("viewBox", `0 0 ${boardRect.width.toFixed(1)} ${boardRect.height.toFixed(1)}`);
+  svg.innerHTML = paths;
+}
+
+function getNodeRect(element, boardRect) {
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left - boardRect.left,
+    top: rect.top - boardRect.top,
+    width: rect.width,
+    height: rect.height,
+    centerX: rect.left - boardRect.left + rect.width / 2,
+    centerY: rect.top - boardRect.top + rect.height / 2,
+  };
+}
+
+function projectPointFromRect(rect, towardX, towardY, gap = 0) {
+  const halfWidth = rect.width / 2;
+  const halfHeight = rect.height / 2;
+  const dx = towardX - rect.centerX;
+  const dy = towardY - rect.centerY;
+  const length = Math.hypot(dx, dy) || 1;
+  const scale = 1 / Math.max(Math.abs(dx) / Math.max(halfWidth, 1), Math.abs(dy) / Math.max(halfHeight, 1), 1);
+  const boundaryX = rect.centerX + dx * scale;
+  const boundaryY = rect.centerY + dy * scale;
+
+  return {
+    x: boundaryX + (dx / length) * gap,
+    y: boundaryY + (dy / length) * gap,
+  };
 }
 
 function renderInspector(label) {
@@ -1286,3 +1361,15 @@ installEvents();
 installSmoothScroll();
 render();
 startTicker();
+
+window.addEventListener("resize", () => {
+  scheduleNetworkLines(elements.heroNodeLayer);
+  scheduleNetworkLines(elements.graphNodeLayer);
+}, { passive: true });
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(() => {
+    scheduleNetworkLines(elements.heroNodeLayer);
+    scheduleNetworkLines(elements.graphNodeLayer);
+  });
+}
