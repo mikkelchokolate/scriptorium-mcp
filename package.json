@@ -1,0 +1,26 @@
+{
+  "name": "scriptorium-mcp",
+  "version": "1.2.0",
+  "description": "Scriptorium MCP - file-first writing workspace with optional graph and ontology extensions",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "eventemitter3": "^5.0.4",
+    "fs-extra": "^11.2.0",
+    "neo4j-driver": "^5.28.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

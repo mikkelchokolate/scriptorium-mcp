@@ -1,0 +1,61 @@
+{
+  "$schema": "../plugins/ontology-schema.json",
+  "name": "Historical Fiction Ontology",
+  "version": "1.0.0",
+  "description": "Entity types and relations for historical fiction — no magic, grounded in real-world social structures",
+  "entityTypes": [
+    {
+      "name": "HistoricalPeriod",
+      "description": "A specific era or time period",
+      "properties": ["start_year", "end_year", "region", "key_events"],
+      "color": "#8b4513"
+    },
+    {
+      "name": "SocialClass",
+      "description": "A social stratum or class",
+      "properties": ["privileges", "obligations", "mobility", "typical_occupations"],
+      "color": "#cd853f"
+    },
+    {
+      "name": "Institution",
+      "description": "A church, guild, court, or other institution",
+      "properties": ["type", "power_level", "founded", "jurisdiction"],
+      "color": "#a0522d"
+    },
+    {
+      "name": "HistoricalEvent",
+      "description": "A real or fictional historical event",
+      "properties": ["date", "location", "participants", "outcome", "significance"],
+      "color": "#d2691e"
+    },
+    {
+      "name": "Occupation",
+      "description": "A profession or role in society",
+      "properties": ["social_class", "income", "required_skills", "gender_restrictions"],
+      "color": "#bc8f5f"
+    }
+  ],
+  "relationTypes": [
+    { "name": "LIVES_IN_PERIOD", "from": "Character", "to": "HistoricalPeriod", "description": "Character exists in this period" },
+    { "name": "BELONGS_TO_CLASS", "from": "Character", "to": "SocialClass", "description": "Character's social standing" },
+    { "name": "MEMBER_OF", "from": "Character", "to": "Institution", "description": "Character belongs to this institution" },
+    { "name": "WITNESSED", "from": "Character", "to": "HistoricalEvent", "description": "Character witnessed this event" },
+    { "name": "PRACTICES", "from": "Character", "to": "Occupation", "description": "Character's profession" },
+    { "name": "PRECEDED_BY", "from": "HistoricalPeriod", "to": "HistoricalPeriod", "description": "Temporal ordering" },
+    { "name": "CAUSED", "from": "HistoricalEvent", "to": "HistoricalEvent", "description": "Causal chain of events" }
+  ],
+  "consistencyRules": [
+    {
+      "id": "anachronism_check",
+      "description": "Characters should not use technology from future periods",
+      "query": "MATCH (c:Character)-[:LIVES_IN_PERIOD]->(p:HistoricalPeriod), (c)-[:POSSESSES]->(a) WHERE a.invented_year > p.end_year RETURN c.name as violation",
+      "severity": "error"
+    },
+    {
+      "id": "gender_occupation",
+      "description": "Flag potentially anachronistic gender-occupation combinations for review",
+      "query": "MATCH (c:Character)-[:PRACTICES]->(o:Occupation) WHERE o.gender_restrictions IS NOT NULL RETURN c.name, o.name as potential_anachronism",
+      "severity": "info"
+    }
+  ]
+}

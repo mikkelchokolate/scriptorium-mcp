@@ -1,0 +1,61 @@
+{
+  "$schema": "../plugins/ontology-schema.json",
+  "name": "Contemporary Literary Fiction Ontology",
+  "version": "1.0.0",
+  "description": "Entity types for contemporary literary fiction — psychological depth, social dynamics, thematic resonance",
+  "entityTypes": [
+    {
+      "name": "PsychologicalState",
+      "description": "A character's mental/emotional state at a point in the narrative",
+      "properties": ["emotion", "trigger", "chapter", "intensity", "resolved"],
+      "color": "#6c5ce7"
+    },
+    {
+      "name": "Theme",
+      "description": "A thematic element woven through the narrative",
+      "properties": ["description", "first_appearance", "resolution", "symbols"],
+      "color": "#a29bfe"
+    },
+    {
+      "name": "Relationship",
+      "description": "A relationship between two characters",
+      "properties": ["type", "dynamic", "power_balance", "history", "current_state"],
+      "color": "#fd79a8"
+    },
+    {
+      "name": "Symbol",
+      "description": "A recurring symbol or motif",
+      "properties": ["meaning", "first_appearance", "recurrences", "resolution"],
+      "color": "#fdcb6e"
+    },
+    {
+      "name": "Setting",
+      "description": "A contemporary real-world setting",
+      "properties": ["city", "country", "year", "social_context", "atmosphere"],
+      "color": "#00b894"
+    }
+  ],
+  "relationTypes": [
+    { "name": "EXPERIENCES", "from": "Character", "to": "PsychologicalState", "description": "Character's emotional arc" },
+    { "name": "EMBODIES", "from": "Character", "to": "Theme", "description": "Character represents this theme" },
+    { "name": "IN_RELATIONSHIP_WITH", "from": "Character", "to": "Character", "description": "Interpersonal connection" },
+    { "name": "ASSOCIATED_WITH", "from": "Character", "to": "Symbol", "description": "Symbol tied to character" },
+    { "name": "LOCATED_IN", "from": "Character", "to": "Setting", "description": "Character's world" },
+    { "name": "TRIGGERS", "from": "HistoricalEvent", "to": "PsychologicalState", "description": "Event causes emotional response" },
+    { "name": "RESOLVES", "from": "Theme", "to": "Theme", "description": "Thematic resolution arc" }
+  ],
+  "consistencyRules": [
+    {
+      "id": "unresolved_trauma",
+      "description": "Flag characters with unresolved psychological states at narrative end",
+      "query": "MATCH (c:Character)-[:EXPERIENCES]->(p:PsychologicalState) WHERE p.resolved = false AND p.chapter > 20 RETURN c.name, p.emotion as unresolved",
+      "severity": "info"
+    },
+    {
+      "id": "theme_consistency",
+      "description": "Themes should appear in at least 3 chapters to be considered developed",
+      "query": "MATCH (t:Theme) WHERE size(t.recurrences) < 3 RETURN t.description as underdeveloped_theme",
+      "severity": "warning"
+    }
+  ]
+}

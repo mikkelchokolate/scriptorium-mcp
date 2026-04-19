@@ -1,0 +1,70 @@
+{
+  "$schema": "../plugins/ontology-schema.json",
+  "name": "Fantasy Ontology",
+  "version": "1.0.0",
+  "description": "Entity types and relations for epic/grimdark fantasy worlds",
+  "entityTypes": [
+    {
+      "name": "MagicSystem",
+      "description": "A system of magic with rules, costs, and limitations",
+      "properties": ["source", "cost", "limitations", "practitioners", "power_level"],
+      "color": "#9b59b6"
+    },
+    {
+      "name": "Spell",
+      "description": "A specific magical ability or incantation",
+      "properties": ["school", "cost", "effect", "range", "duration"],
+      "color": "#8e44ad"
+    },
+    {
+      "name": "Artifact",
+      "description": "A magical item with special properties",
+      "properties": ["origin", "power", "curse", "owner_history"],
+      "color": "#f39c12"
+    },
+    {
+      "name": "Deity",
+      "description": "A god, demigod, or divine entity",
+      "properties": ["domain", "alignment", "worshippers", "manifestation"],
+      "color": "#f1c40f"
+    },
+    {
+      "name": "Race",
+      "description": "A sentient species or race",
+      "properties": ["lifespan", "abilities", "culture", "homeland"],
+      "color": "#27ae60"
+    },
+    {
+      "name": "Kingdom",
+      "description": "A political entity or nation",
+      "properties": ["ruler", "capital", "military_strength", "economy", "allies"],
+      "color": "#e74c3c"
+    }
+  ],
+  "relationTypes": [
+    { "name": "WIELDS", "from": "Character", "to": "MagicSystem", "description": "Character uses this magic system" },
+    { "name": "CASTS", "from": "Character", "to": "Spell", "description": "Character can cast this spell" },
+    { "name": "POSSESSES", "from": "Character", "to": "Artifact", "description": "Character owns this artifact" },
+    { "name": "WORSHIPS", "from": "Character", "to": "Deity", "description": "Character worships this deity" },
+    { "name": "BELONGS_TO_RACE", "from": "Character", "to": "Race", "description": "Character is of this race" },
+    { "name": "RULES", "from": "Character", "to": "Kingdom", "description": "Character rules this kingdom" },
+    { "name": "POWERED_BY", "from": "Spell", "to": "MagicSystem", "description": "Spell belongs to this magic system" },
+    { "name": "GRANTS", "from": "Deity", "to": "MagicSystem", "description": "Deity grants this magic" },
+    { "name": "AT_WAR_WITH", "from": "Kingdom", "to": "Kingdom", "description": "Kingdoms are at war" },
+    { "name": "ALLIED_WITH", "from": "Kingdom", "to": "Kingdom", "description": "Kingdoms are allied" }
+  ],
+  "consistencyRules": [
+    {
+      "id": "magic_cost",
+      "description": "Every spell must have a defined cost",
+      "query": "MATCH (s:Spell) WHERE s.cost IS NULL RETURN s.name as violation",
+      "severity": "warning"
+    },
+    {
+      "id": "no_dead_caster",
+      "description": "Dead characters cannot cast spells",
+      "query": "MATCH (c:Character)-[:CASTS]->(s:Spell) WHERE 'dead' IN c.observations RETURN c.name as violation",
+      "severity": "error"
+    }
+  ]
+}
