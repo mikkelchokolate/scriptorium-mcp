@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 import { createProjectService } from "../services/project-service.js";
+import eventBus from "../utils/event-bus.js";
 
 export const characterForgerSchema = z.object({
   action: z.enum(["create", "update", "get", "list", "track_arc"]).describe("Action to perform"),
@@ -102,6 +103,11 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     index[slug] = { name, role: character.role, file: `${slug}.json` };
     await saveIndex(index);
     logOperation("character_created", name, { project: input.project });
+    eventBus.emitEvent("character.created", {
+      project: input.project,
+      actor: "character_forger",
+      details: { name, role: character.role },
+    });
     return `Character "${name}" created.`;
   }
 
@@ -133,6 +139,11 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     index[slug] = { name: updated.name, role: updated.role, file: `${slug}.json` };
     await saveIndex(index);
     logOperation("character_updated", name, { project: input.project });
+    eventBus.emitEvent("character.updated", {
+      project: input.project,
+      actor: "character_forger",
+      details: { name, role: updated.role },
+    });
     return `Character "${name}" updated.`;
   }
 
@@ -163,6 +174,11 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     });
 
     logOperation("character_arc_tracked", name, { project: input.project, stage: input.arc_stage });
+    eventBus.emitEvent("character.updated", {
+      project: input.project,
+      actor: "character_forger",
+      details: { name, arcStage: input.arc_stage },
+    });
     return `Arc stage "${input.arc_stage}" tracked for "${name}".`;
   }
 

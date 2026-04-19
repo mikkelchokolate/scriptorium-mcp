@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "build:web": "npm --prefix web run build",
+    "build:all": "npm run build && npm run build:web",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
+    "dev:web": "npm --prefix web run dev",
     "watch": "tsc --watch"
   },
   "dependencies": {
@@ -15,11 +18,13 @@
     "eventemitter3": "^5.0.4",
     "fs-extra": "^11.2.0",
     "neo4j-driver": "^5.28.3",
+    "ws": "^8.20.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

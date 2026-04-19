@@ -10,6 +10,9 @@ import eventBus from "./utils/event-bus.js";
 import pluginService from "./services/plugin-service.js";
 import loreService from "./services/lore-service.js";
 import { createProjectService } from "./services/project-service.js";
+import { GraphQueryService } from "./backend/graph/graph-query-service.js";
+import { GraphEventStreamService } from "./backend/graph/graph-event-stream-service.js";
+import { GraphApiServer } from "./backend/graph/graph-api-server.js";
 
 import { worldWeaver, worldWeaverSchema } from "./tools/world-weaver.js";
 import { characterForger, characterForgerSchema } from "./tools/character-forger.js";
@@ -27,6 +30,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECTS_ROOT = process.env.SCRIPTORIUM_PROJECTS ?? path.join(__dirname, "..", "projects");
 const PLUGINS_DIR = path.join(__dirname, "..", "plugins");
 const projectService = createProjectService(PROJECTS_ROOT);
+const graphPort = Number(process.env.SCRIPTORIUM_GRAPH_PORT ?? "4319");
+const graphHost = process.env.SCRIPTORIUM_GRAPH_HOST ?? "0.0.0.0";
 
 await fs.ensureDir(PROJECTS_ROOT);
 loreService.configure({ eventBus });
@@ -43,6 +48,21 @@ try {
   console.error(`[Scriptorium] Optional graph extension ${loreService.isConnected ? "connected" : "not available; using file-backed mode"}.`);
 } catch (error) {
   console.error(`[Scriptorium] Optional graph extension unavailable: ${String(error)}`);
+}
+
+const graphQueryService = new GraphQueryService(PROJECTS_ROOT, projectService, loreService);
+const graphEventStreamService = new GraphEventStreamService(graphQueryService, eventBus);
+const graphApiServer = new GraphApiServer(graphQueryService, graphEventStreamService, {
+  host: graphHost,
+  port: Number.isFinite(graphPort) ? graphPort : 4319,
+  corsOrigin: process.env.SCRIPTORIUM_GRAPH_CORS_ORIGIN ?? "*",
+});
+
+try {
+  await graphApiServer.start();
+  console.error(`[Scriptorium] Graph Explorer API listening on http://${graphHost}:${Number.isFinite(graphPort) ? graphPort : 4319}`);
+} catch (error) {
+  console.error(`[Scriptorium] Graph Explorer API unavailable: ${String(error)}`);
 }
 
 const server = new McpServer({

@@ -1,7 +1,11 @@
 node_modules/
+web/node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+.next/
+web/.next/
+web/out/
 
 projects/*
 !projects/.gitkeep

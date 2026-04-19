@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 import { createProjectService } from "../services/project-service.js";
+import eventBus from "../utils/event-bus.js";
 
 export const worldWeaverSchema = z.object({
   action: z.enum(["create", "expand", "list", "get"]).describe("Action to perform"),
@@ -56,6 +57,11 @@ export const worldWeaver = withErrorHandling(async (input: WorldWeaverInput, pro
     const template = buildWorldBibleTemplate(input.project, worldName, genre, description);
     await projectService.writeWorldBible(input.project, template);
     logOperation("world_bible_created", worldName, { project: input.project });
+    eventBus.emitEvent("world.updated", {
+      project: input.project,
+      actor: "world_weaver",
+      details: { action: input.action, worldName, genre },
+    });
     return `World Bible created for "${worldName}".\n\nThe canonical bible file is world_bible.md.`;
   }
 
@@ -75,6 +81,11 @@ export const worldWeaver = withErrorHandling(async (input: WorldWeaverInput, pro
     await projectService.appendToMarkdownSection(input.project, sectionHeader, entry);
 
     logOperation("world_expanded", input.name, { element: input.element, project: input.project });
+    eventBus.emitEvent("world.updated", {
+      project: input.project,
+      actor: "world_weaver",
+      details: { action: input.action, element: input.element, name: input.name },
+    });
     return `Added ${input.element} "${input.name}" and updated world_bible.md.`;
   }
 

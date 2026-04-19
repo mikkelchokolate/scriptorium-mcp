@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 
 export type ScriptoriumEvent =
   | 'project.created'
+  | 'project.deleted'
   | 'world.updated'
   | 'character.created'
   | 'character.updated'
@@ -41,6 +42,10 @@ class ScriptoriumEventBus extends EventEmitter {
   private setupListeners(): void {
     this.on('project.created', (payload: EventPayload) => {
       this.log(`Project created: ${payload.project}`, payload);
+    });
+
+    this.on('project.deleted', (payload: EventPayload) => {
+      this.log(`Project deleted: ${payload.project}`, payload);
     });
 
     this.on('world.updated', (payload: EventPayload) => {

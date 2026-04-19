@@ -5,10 +5,13 @@ Scriptorium MCP is a file-first writing workspace for fiction projects. It expos
 ## What it includes
 
 - TypeScript MCP server over stdio
+- Dedicated HTTP + WebSocket graph service for live browser clients
 - File-backed project storage under `projects/`
 - Writing tools for world-building, outlining, chapter work, character management, and lore checks
 - Optional ontology plugins loaded from `plugins/`
 - Optional Neo4j graph enrichment for entities, relations, contradictions, and timeline views
+- Temporal and causal forecast layer for detecting near-future plot-hole risk
+- Next.js + React Flow web explorer under `web/`
 
 ## Core tools
 
@@ -33,7 +36,7 @@ Requirements:
 - npm
 - Optional: Neo4j 5.x for graph features
 
-Install and run:
+Install and run the backend:
 
 ```bash
 npm install
@@ -41,15 +44,47 @@ npm run build
 npm start
 ```
 
-For local development:
+For local backend development:
 
 ```bash
 npm run dev
 ```
 
+Build the full stack:
+
+```bash
+npm run build:all
+```
+
+Run the web explorer:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+The graph service defaults to `http://localhost:4319` and the Next.js app can connect to it with:
+
+```bash
+NEXT_PUBLIC_SCRIPTORIUM_GRAPH_HTTP_URL=http://localhost:4319
+NEXT_PUBLIC_SCRIPTORIUM_GRAPH_WS_URL=ws://localhost:4319
+```
+
+## Graph API
+
+The backend now exposes a live graph capability layer alongside MCP:
+
+- `GET /api/capabilities`
+- `GET /api/projects`
+- `GET /api/projects/:project/graph?locale=en|ru`
+- `GET /api/projects/:project/graph/timeline?locale=en|ru`
+- `GET /api/projects/:project/graph/forecast?locale=en|ru&horizon=10`
+- `WS /ws/projects/:project/graph?locale=en|ru`
+
 ## Docker
 
-The repository includes `Dockerfile` and `docker-compose.yml` for running the MCP server with an optional Neo4j service.
+The repository includes `Dockerfile` and `docker-compose.yml` for running the MCP server and graph API with an optional Neo4j service.
 
 ## Repository layout
 

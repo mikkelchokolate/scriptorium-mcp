@@ -1,25 +1,9 @@
 export type GraphLocale = "en" | "ru";
-
 export type GraphSourceKind = "canonical" | "neo4j" | "derived" | "empty";
 
-export type GraphNodeKind =
-  | "project"
-  | "world_bible"
-  | "outline"
-  | "chapter"
-  | "character"
-  | "lore_fact"
-  | "entity"
-  | "event"
-  | "constraint"
-  | "unknown";
-
-export interface GraphLocalizedText {
+export interface GraphResolvedText {
   en?: string;
   ru?: string;
-}
-
-export interface GraphResolvedText extends GraphLocalizedText {
   locale: GraphLocale;
   value: string;
   fallbackLocale: GraphLocale;
@@ -44,10 +28,11 @@ export interface GraphCausalDTO {
 }
 
 export interface GraphNodeDataDTO {
+  [key: string]: unknown;
   label: GraphResolvedText;
   subtitle?: GraphResolvedText;
   description?: GraphResolvedText;
-  kind: GraphNodeKind;
+  kind: string;
   project: string;
   source: GraphSourceKind;
   confidence?: number;
@@ -63,12 +48,13 @@ export interface GraphNodeDataDTO {
 
 export interface GraphFlowNodeDTO {
   id: string;
-  type: GraphNodeKind | string;
+  type: string;
   position: { x: number; y: number };
   data: GraphNodeDataDTO;
 }
 
 export interface GraphEdgeDataDTO {
+  [key: string]: unknown;
   label: GraphResolvedText;
   relationType: string;
   project: string;
@@ -89,32 +75,25 @@ export interface GraphFlowEdgeDTO {
   data: GraphEdgeDataDTO;
 }
 
-export interface GraphProjectionSummaryDTO {
-  project: string;
-  nodes: number;
-  edges: number;
-  characters: number;
-  chapters: number;
-  loreFacts: number;
-  entities: number;
-  isConnectedToNeo4j: boolean;
-  lastUpdated: string;
-}
-
 export interface GraphProjectionSnapshotDTO {
   project: string;
   locale: GraphLocale;
   source: GraphSourceKind;
   generatedAt: string;
-  summary: GraphProjectionSummaryDTO;
+  summary: {
+    project: string;
+    nodes: number;
+    edges: number;
+    characters: number;
+    chapters: number;
+    loreFacts: number;
+    entities: number;
+    isConnectedToNeo4j: boolean;
+    lastUpdated: string;
+  };
   nodes: GraphFlowNodeDTO[];
   edges: GraphFlowEdgeDTO[];
   warnings: string[];
-}
-
-export interface GraphProjectionOptions {
-  locale?: GraphLocale;
-  includeNeo4j?: boolean;
 }
 
 export interface GraphTimelineEntryDTO {
@@ -142,34 +121,28 @@ export interface GraphTimelineResponseDTO {
   entries: GraphTimelineEntryDTO[];
 }
 
-export type GraphForecastSeverity = "info" | "warning" | "critical";
-
-export interface GraphForecastEvidenceDTO {
-  kind: "fact" | "entity" | "relation" | "contradiction" | "timeline" | "outline";
-  label: GraphResolvedText;
-  chapter?: number;
-  nodeIds?: string[];
-  edgeIds?: string[];
-}
-
-export interface GraphForecastChainStepDTO {
-  from: string;
-  relation: string;
-  to: string;
-  confidence?: number;
-  edgeId?: string;
-}
-
 export interface GraphForecastRiskDTO {
   id: string;
-  type: "timeline_gap" | "causal_gap" | "contradiction" | "orphaned_arc" | "foreshadowing_gap";
-  severity: GraphForecastSeverity;
+  type: string;
+  severity: "info" | "warning" | "critical";
   confidence: number;
   title: GraphResolvedText;
   summary: GraphResolvedText;
   impactedChapters: number[];
-  evidence: GraphForecastEvidenceDTO[];
-  causalChain?: GraphForecastChainStepDTO[];
+  evidence: Array<{
+    kind: string;
+    label: GraphResolvedText;
+    chapter?: number;
+    nodeIds?: string[];
+    edgeIds?: string[];
+  }>;
+  causalChain?: Array<{
+    from: string;
+    relation: string;
+    to: string;
+    confidence?: number;
+    edgeId?: string;
+  }>;
   nodeIds?: string[];
   edgeIds?: string[];
 }
@@ -211,37 +184,23 @@ export interface GraphProjectSummaryDTO {
   updatedAt?: string;
 }
 
-export interface GraphBroadcastSnapshotMessage {
-  kind: "snapshot";
-  project: string;
-  locale: GraphLocale;
-  timestamp: string;
-  version: number;
-  eventId?: string;
-  snapshot: GraphProjectionSnapshotDTO;
-}
-
-export interface GraphBroadcastUpdateMessage<TPayload = unknown> {
-  kind: "update";
-  project: string;
-  locale: GraphLocale;
-  timestamp: string;
-  version: number;
-  eventId?: string;
-  event: string;
-  payload: TPayload;
-}
-
-export type GraphBroadcastMessage<TPayload = unknown> =
-  | GraphBroadcastSnapshotMessage
-  | GraphBroadcastUpdateMessage<TPayload>;
-
-export type GraphBroadcastListener = (message: GraphBroadcastMessage) => void;
-
-export interface GraphSocketHelloDTO {
-  connectionId: string;
-  project: string;
-  locale: GraphLocale;
-  timestamp: string;
-  capabilities: GraphCapabilitiesDTO;
-}
+export type GraphBroadcastMessage =
+  | {
+    kind: "snapshot";
+    project: string;
+    locale: GraphLocale;
+    timestamp: string;
+    version: number;
+    eventId?: string;
+    snapshot: GraphProjectionSnapshotDTO;
+  }
+  | {
+    kind: "update";
+    project: string;
+    locale: GraphLocale;
+    timestamp: string;
+    version: number;
+    eventId?: string;
+    event: string;
+    payload: unknown;
+  };

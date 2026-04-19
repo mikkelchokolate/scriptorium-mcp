@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 import { createProjectService } from "../services/project-service.js";
+import eventBus from "../utils/event-bus.js";
 
 export const storyArchitectSchema = z.object({
   action: z.enum(["create_outline", "get_outline", "add_beat", "suggest_twist"]).describe("Action to perform"),
@@ -118,6 +119,11 @@ export const storyArchitect = withErrorHandling(async (input: StoryArchitectInpu
 
     await projectService.withLock(`outline:${input.project}`, () => projectService.writeJsonAtomic(outlinePath, outline));
     logOperation("outline_created", outline.title, { project: input.project, structure });
+    eventBus.emitEvent("outline.updated", {
+      project: input.project,
+      actor: "story_architect",
+      details: { action: input.action, structure, title: outline.title },
+    });
     return `Outline created using "${structure}" for "${outline.title}".`;
   }
 
@@ -162,6 +168,11 @@ export const storyArchitect = withErrorHandling(async (input: StoryArchitectInpu
     outline.updated = new Date().toISOString();
     await projectService.withLock(`outline:${input.project}`, () => projectService.writeJsonAtomic(outlinePath, outline));
     logOperation("outline_beat_added", input.beat.name, { project: input.project });
+    eventBus.emitEvent("outline.updated", {
+      project: input.project,
+      actor: "story_architect",
+      details: { action: input.action, beat: input.beat.name },
+    });
     return `Beat "${input.beat.name}" updated in outline.`;
   }
 

@@ -12,12 +12,13 @@ COPY dist/ ./dist/
 
 # Neo4j connection will be configured via env
 ENV SCRIPTORIUM_PROJECTS=/data/projects \
+    SCRIPTORIUM_GRAPH_PORT=4319 \
     NEO4J_URI=bolt://neo4j:7687 \
     NEO4J_USERNAME=neo4j \
     NEO4J_PASSWORD=password
 
 VOLUME ["/data/projects"]
 
-EXPOSE 3000
+EXPOSE 4319
 
 CMD ["node", "dist/index.js"]

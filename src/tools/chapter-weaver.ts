@@ -4,6 +4,7 @@ import path from "path";
 import loreService from "../services/lore-service.js";
 import { createProjectService } from "../services/project-service.js";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
+import eventBus from "../utils/event-bus.js";
 
 export const chapterWeaverSchema = z.object({
   action: z.enum(["create", "append", "get", "list", "add_cliffhanger"]).describe("Action to perform"),
@@ -95,6 +96,11 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
     }
 
     logOperation("chapter_created", title, { project: input.project, chapter: chapterNumber });
+    eventBus.emitEvent("chapter.created", {
+      project: input.project,
+      actor: "chapter_weaver",
+      details: { chapter: chapterNumber, title },
+    });
     return `Chapter ${chapterNumber} "${title}" created.`;
   }
 
@@ -114,6 +120,11 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
     }
 
     logOperation("chapter_appended", String(chapterNumber), { project: input.project });
+    eventBus.emitEvent("chapter.appended", {
+      project: input.project,
+      actor: "chapter_weaver",
+      details: { chapter: chapterNumber, contentLength: content.length },
+    });
     return `Content appended to Chapter ${chapterNumber}.`;
   }
 
@@ -124,6 +135,11 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
     }
     const cliffhanger = input.cliffhanger ?? generateCliffhanger();
     await projectService.appendToChapter(input.project, chapterNumber, `\n\n---\n*Cliffhanger:* ${cliffhanger}\n`);
+    eventBus.emitEvent("chapter.appended", {
+      project: input.project,
+      actor: "chapter_weaver",
+      details: { chapter: chapterNumber, cliffhanger },
+    });
     return `Cliffhanger added to Chapter ${chapterNumber}:\n"${cliffhanger}"`;
   }
 

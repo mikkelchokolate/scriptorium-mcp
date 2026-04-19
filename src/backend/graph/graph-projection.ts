@@ -25,6 +25,7 @@ import type {
   GraphSourceKind,
   GraphTemporalDTO,
 } from "./graph-dtos.js";
+import { localizeGraphString, otherGraphLocale, resolveGraphText } from "./graph-localization.js";
 
 type CharacterFileRecord = {
   name: string;
@@ -71,30 +72,16 @@ function normalizeLocale(locale?: string): GraphLocale {
   return locale === "ru" ? "ru" : "en";
 }
 
-function otherLocale(locale: GraphLocale): GraphLocale {
-  return locale === "en" ? "ru" : "en";
-}
-
 function localizeText(text: LocalizedText | undefined, locale: GraphLocale, fallbackValue: string): GraphResolvedText {
-  const value = text?.[locale]?.trim() || text?.[otherLocale(locale)]?.trim() || fallbackValue;
-  return {
-    en: text?.en?.trim() || fallbackValue,
-    ru: text?.ru?.trim() || fallbackValue,
-    locale,
-    value,
-    fallbackLocale: otherLocale(locale),
-  };
+  const fallback = localizeGraphString(fallbackValue, locale, fallbackValue);
+  return resolveGraphText(locale, {
+    en: text?.en?.trim() || fallback.en || fallbackValue,
+    ru: text?.ru?.trim() || fallback.ru || fallbackValue,
+  });
 }
 
 function localizeString(text: string | undefined, locale: GraphLocale, fallbackValue: string): GraphResolvedText {
-  const value = text?.trim() || fallbackValue;
-  return {
-    en: value,
-    ru: value,
-    locale,
-    value,
-    fallbackLocale: otherLocale(locale),
-  };
+  return localizeGraphString(text, locale, fallbackValue);
 }
 
 function temporalFromEntity(input?: {
@@ -117,6 +104,24 @@ function temporalFromEntity(input?: {
     precision: input.temporalPrecision,
   };
   return Object.values(temporal).some((value) => value !== undefined) ? temporal : undefined;
+}
+
+function causalFromEntity(input?: {
+  causeConfidence?: number;
+  causalPolarity?: string;
+  causalDistance?: number;
+  evidenceSource?: string;
+  forecastHorizonChapters?: number;
+}) {
+  if (!input) return undefined;
+  const causal = {
+    causeConfidence: input.causeConfidence,
+    causalPolarity: input.causalPolarity,
+    causalDistance: input.causalDistance,
+    evidenceSource: input.evidenceSource,
+    forecastHorizonChapters: input.forecastHorizonChapters,
+  };
+  return Object.values(causal).some((value) => value !== undefined) ? causal : undefined;
 }
 
 function temporalFromChapter(chapter: number): GraphTemporalDTO {
@@ -411,6 +416,7 @@ export class GraphProjectionService {
         confidence: fact.confidence,
         chapter: fact.chapter,
         temporal: fact.temporal ? temporalFromEntity(fact.temporal) : (fact.chapter !== undefined ? temporalFromChapter(fact.chapter) : undefined),
+        causal: causalFromEntity(fact.causal),
         createdAt: fact.added,
         details: {
           category: fact.category,
@@ -438,6 +444,7 @@ export class GraphProjectionService {
         aliases: entity.aliases,
         tags: entity.tags,
         temporal: temporalFromEntity(entity.temporal),
+        causal: causalFromEntity(entity.causal),
         createdAt: entity.created,
         updatedAt: entity.updated,
         chapter: entity.chapter,
@@ -465,6 +472,7 @@ export class GraphProjectionService {
         source: "neo4j",
         confidence: event.confidence,
         temporal: temporalFromEntity(event.temporal),
+        causal: causalFromEntity(event.causal),
         chapter: event.chapter,
         details: {
           entity: event.entity,
@@ -490,6 +498,7 @@ export class GraphProjectionService {
         source: "neo4j",
         confidence: relation.confidence,
         temporal: temporalFromEntity(relation.temporal),
+        causal: causalFromEntity(relation.causal),
         createdAt: relation.created,
         updatedAt: relation.updated,
         details: {

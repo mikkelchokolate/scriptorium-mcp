@@ -2,6 +2,7 @@ import fs from "fs-extra";
 import path from "path";
 import { z } from "zod";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
+import eventBus from "../utils/event-bus.js";
 import { createProjectService } from "../services/project-service.js";
 import type { ProjectMeta } from "../core/domain/entities.js";
 
@@ -90,6 +91,11 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
     await projectService.removeLegacyLivingBible(input.project);
 
     logOperation("project_created", input.project, { genre: meta.genre });
+    eventBus.emitEvent("project.created", {
+      project: input.project,
+      actor: "project_manager",
+      details: { genre: meta.genre },
+    });
     return `Project "${input.project}" created.\n\nDirectory:\n  ${input.project}/\n  ├── project.json\n  ├── world_bible.md\n  ├── lore_facts.json\n  ├── chapters/\n  ├── characters/\n  ├── world/\n  └── exports/\n\nThe canonical project bible is world_bible.md.`;
   }
 
@@ -122,6 +128,10 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
 
     await fs.remove(projectDir);
     logOperation("project_deleted", input.project);
+    eventBus.emitEvent("project.deleted", {
+      project: input.project,
+      actor: "project_manager",
+    });
     return `Project "${input.project}" has been deleted.`;
   }
 
