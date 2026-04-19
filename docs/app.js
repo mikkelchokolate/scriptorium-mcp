@@ -1136,6 +1136,91 @@ function installRevealObserver() {
   document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
 }
 
+function installSmoothPaging() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+
+  if (prefersReducedMotion || !hasFinePointer || navigator.maxTouchPoints > 0) {
+    return;
+  }
+
+  let currentY = window.scrollY;
+  let targetY = window.scrollY;
+  let frame = 0;
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  const maxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+  const tick = () => {
+    currentY += (targetY - currentY) * 0.11;
+
+    if (Math.abs(targetY - currentY) < 0.5) {
+      currentY = targetY;
+      window.scrollTo(0, currentY);
+      frame = 0;
+      return;
+    }
+
+    window.scrollTo(0, currentY);
+    frame = window.requestAnimationFrame(tick);
+  };
+
+  const start = () => {
+    if (frame === 0) {
+      frame = window.requestAnimationFrame(tick);
+    }
+  };
+
+  const hasScrollableParent = (node) => {
+    if (!(node instanceof Element)) return false;
+
+    let current = node;
+    while (current && current !== document.body) {
+      const style = window.getComputedStyle(current);
+      const overflowY = style.overflowY;
+      const canScroll = /(auto|scroll|overlay)/.test(overflowY) && current.scrollHeight > current.clientHeight;
+      if (canScroll) {
+        return true;
+      }
+      current = current.parentElement;
+    }
+
+    return false;
+  };
+
+  window.addEventListener("wheel", (event) => {
+    if (event.ctrlKey || Math.abs(event.deltaY) < 0.1) return;
+    if (hasScrollableParent(event.target)) return;
+
+    event.preventDefault();
+    targetY = clamp(targetY + event.deltaY * 0.95, 0, maxScrollY());
+    start();
+  }, { passive: false });
+
+  window.addEventListener("scroll", () => {
+    if (frame !== 0) return;
+    currentY = window.scrollY;
+    targetY = window.scrollY;
+  }, { passive: true });
+
+  window.addEventListener("resize", () => {
+    const bounded = clamp(targetY, 0, maxScrollY());
+    targetY = bounded;
+    currentY = clamp(currentY, 0, maxScrollY());
+  });
+
+  document.addEventListener("click", (event) => {
+    const anchor = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+    if (!anchor) return;
+
+    window.setTimeout(() => {
+      currentY = window.scrollY;
+      targetY = window.scrollY;
+    }, 260);
+  });
+}
+
 function startTicker() {
   window.setInterval(() => {
     const events = getDictionary().hero.events;
@@ -1147,5 +1232,6 @@ function startTicker() {
 
 installEvents();
 installRevealObserver();
+installSmoothPaging();
 render();
 startTicker();
