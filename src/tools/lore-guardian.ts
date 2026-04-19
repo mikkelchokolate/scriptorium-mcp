@@ -1,18 +1,20 @@
 import { z } from "zod";
 
-import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
-import eventBus from "../utils/event-bus.js";
-import loreService from "../services/lore-service.js";
-import { createProjectService } from "../services/project-service.js";
+import { makeProvenance } from "../core/domain/entities.js";
 import type {
+  CausalMetadata,
   LoreFact,
   LoreFactLocalization,
   ProvenanceSource,
   TemporalMetadata,
-  CausalMetadata,
 } from "../core/domain/entities.js";
-import { makeProvenance } from "../core/domain/entities.js";
 import { LOCALE_CODE_PATTERN } from "../core/i18n/locales.js";
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
+import { createProjectService } from "../services/project-service.js";
+import loreService from "../services/lore-service.js";
+import eventBus from "../utils/event-bus.js";
+import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 
 const factCategories = [
   "character",
@@ -29,11 +31,13 @@ const factCategories = [
   "other",
 ] as const;
 
+const serverMessages = getMcpMessages(SERVER_LOCALE).loreGuardian;
+
 const localizedTextSchema = z.record(
-  z.string().regex(LOCALE_CODE_PATTERN, "Locale keys must use language tags such as en or ru."),
+  z.string().regex(LOCALE_CODE_PATTERN, serverMessages.schema.localeKeyError),
   z.string().min(1).max(500),
 ).refine((value) => Object.keys(value).length > 0, {
-  message: "At least one localized value is required.",
+  message: serverMessages.schema.localizedValueRequired,
 });
 
 const temporalMetadataSchema = z.object({
@@ -69,14 +73,15 @@ const loreFactInputSchema = z.object({
   observations: z.array(z.string().min(1).max(500)).optional(),
 });
 
-export const loreGuardianSchema = z.object({
-  action: z.enum(["check_consistency", "add_fact", "list_facts", "check_timeline"]).describe("Action to perform"),
-  project: z.string().describe("Project name/directory").regex(/^[a-zA-Z0-9_-]+$/).describe("Sanitized project name"),
-  text: z.string().optional().describe("Text to check for consistency"),
-  fact: loreFactInputSchema.optional().describe("Fact to register"),
-  category: z.enum(factCategories).optional(),
+const loreGuardianSchemaBase = z.object({
+  action: z.enum(["check_consistency", "add_fact", "list_facts", "check_timeline"]).describe(serverMessages.schema.action),
+  project: z.string().describe(serverMessages.schema.project).regex(/^[a-zA-Z0-9_-]+$/).describe(serverMessages.schema.projectSanitized),
+  text: z.string().optional().describe(serverMessages.schema.text),
+  fact: loreFactInputSchema.optional().describe(serverMessages.schema.fact),
+  category: z.enum(factCategories).optional().describe(serverMessages.schema.category),
 });
 
+export const loreGuardianSchema = withLocaleInput(loreGuardianSchemaBase);
 export type LoreGuardianInput = z.infer<typeof loreGuardianSchema>;
 
 interface EntityMention {
@@ -157,25 +162,31 @@ function levenshtein(a: string, b: string): number {
   return matrix[a.length][b.length];
 }
 
-function formatFactSuffix(fact: LoreFact): string {
+function formatFactSuffix(fact: LoreFact, locale: string): string {
+  const messages = getMcpMessages(locale).loreGuardian;
   const segments: string[] = [];
-  if (fact.chapter) segments.push(`Ch.${fact.chapter}`);
+  if (fact.chapter) segments.push(`${messages.suffixChapter}${fact.chapter}`);
   if (fact.temporal?.start || fact.temporal?.end) {
-    segments.push(`time=${fact.temporal.start ?? "?"}..${fact.temporal.end ?? "?"}`);
+    segments.push(messages.suffixTime(fact.temporal.start ?? "?", fact.temporal.end ?? "?"));
   }
   if (fact.causal?.forecastHorizonChapters) {
-    segments.push(`forecast+${fact.causal.forecastHorizonChapters}`);
+    segments.push(messages.suffixForecast(fact.causal.forecastHorizonChapters));
   }
   return segments.length > 0 ? ` (${segments.join(", ")})` : "";
 }
 
 export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, projectsRoot: string): Promise<string> => {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).loreGuardian;
   const projectService = createProjectService(projectsRoot);
   await projectService.ensureProjectDirectories(input.project);
 
   if (input.action === "add_fact") {
     if (!input.fact) {
-      throw new ScriptoriumError("Fact object is required for add_fact", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.loreGuardian.addFactRequired),
+        "VALIDATION_ERROR",
+      );
     }
 
     const fact = toLoreFact(input.fact);
@@ -185,8 +196,9 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
     await projectService.appendLoreFact(input.project, fact);
     await projectService.appendToMarkdownSection(
       input.project,
-      "## Rules & Lore",
-      `**${fact.key}**: ${fact.value}${formatFactSuffix(fact)}`,
+      messages.rulesLoreSection,
+      `**${fact.key}**: ${fact.value}${formatFactSuffix(fact, locale)}`,
+      { documentTitle: locale.startsWith("ru") ? "Библия мира" : "World Bible" },
     );
 
     if (loreService.isConnected) {
@@ -218,13 +230,14 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
         chapter: fact.chapter,
         hasTemporal: Boolean(fact.temporal),
         hasCausal: Boolean(fact.causal),
+        locale,
       },
     });
 
-    logOperation(replaced ? "fact_updated" : "fact_added", fact.key, { project: input.project, graph: loreService.isConnected });
+    logOperation(replaced ? "fact_updated" : "fact_added", fact.key, { project: input.project, graph: loreService.isConnected, locale });
     return replaced
-      ? `Fact updated: [${fact.category}] "${fact.key}" = "${fact.value}".`
-      : `Fact registered: [${fact.category}] "${fact.key}" = "${fact.value}".`;
+      ? messages.factUpdated(messages.categoryLabels[fact.category] ?? fact.category, fact.key, fact.value)
+      : messages.factRegistered(messages.categoryLabels[fact.category] ?? fact.category, fact.key, fact.value);
   }
 
   const facts = await projectService.readLoreFacts(input.project);
@@ -232,7 +245,7 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
   if (input.action === "list_facts") {
     const filtered = input.category ? facts.filter((fact) => fact.category === input.category) : facts;
     if (filtered.length === 0) {
-      return "No facts registered yet. Use 'add_fact' to build the project knowledge base.";
+      return messages.listEmpty;
     }
 
     const grouped = new Map<string, LoreFact[]>();
@@ -242,23 +255,27 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
 
     const lines: string[] = [];
     for (const [category, categoryFacts] of grouped.entries()) {
-      lines.push(`\n### ${category.toUpperCase()}`);
+      const label = messages.categoryLabels[category] ?? category;
+      lines.push(messages.categoryHeading(label));
       for (const fact of categoryFacts) {
-        lines.push(`  - **${fact.key}**: ${fact.value}${formatFactSuffix(fact)}`);
+        lines.push(`  - **${fact.key}**: ${fact.value}${formatFactSuffix(fact, locale)}`);
       }
     }
 
     const graphSummary = loreService.isConnected ? await loreService.getGraphSummary(input.project) : null;
     const graphNote = graphSummary && graphSummary.nodes > 0
-      ? `\n\nGraph extension: ${graphSummary.nodes} nodes, ${graphSummary.relations} relations.`
+      ? messages.graphSummary(graphSummary.nodes, graphSummary.relations)
       : "";
 
-    return `Lore Facts for "${input.project}":${lines.join("\n")}${graphNote}`;
+    return messages.listTitle(input.project, lines.join("\n"), graphNote);
   }
 
   if (input.action === "check_consistency") {
     if (!input.text) {
-      throw new ScriptoriumError("Text is required for consistency check", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.loreGuardian.consistencyTextRequired),
+        "VALIDATION_ERROR",
+      );
     }
 
     const issues: string[] = [];
@@ -275,7 +292,7 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
     for (const entity of entities) {
       const matchingFacts = facts.filter((fact) => fact.key.toLowerCase() === entity.name.toLowerCase() || fact.value.toLowerCase().includes(entity.name.toLowerCase()));
       if (matchingFacts.length === 0 && entity.mentions > 1) {
-        issues.push(`New recurring entity detected: "${entity.name}" (${entity.type}). Consider registering it with add_fact.`);
+        issues.push(messages.newRecurringEntity(entity.name, messages.recurringEntityTypes[entity.type] ?? entity.type));
         continue;
       }
 
@@ -293,7 +310,7 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
 
         for (const [literal, opposite] of contradictionPairs) {
           if ((valueLower.includes(literal) && opposite.test(textLower)) || (textLower.includes(literal) && opposite.test(valueLower))) {
-            issues.push(`Potential contradiction for "${fact.key}": lore says "${fact.value}".`);
+            issues.push(messages.contradiction(fact.key, fact.value));
             break;
           }
         }
@@ -304,7 +321,7 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
       const canonical = characterFact.key.toLowerCase();
       for (const entity of entities.filter((entry) => entry.type === "character" && entry.name.length > 3)) {
         if (levenshtein(entity.name.toLowerCase(), canonical) === 1) {
-          issues.push(`Possible name misspelling: "${entity.name}" vs registered "${characterFact.key}".`);
+          issues.push(messages.possibleMisspelling(entity.name, characterFact.key));
         }
       }
     }
@@ -314,20 +331,20 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
       const previous = timelineFacts[index - 1].chapter ?? 0;
       const current = timelineFacts[index].chapter ?? 0;
       if (current - previous > 5) {
-        issues.push(`Timeline gap detected between Ch.${previous} and Ch.${current}.`);
+        issues.push(messages.timelineGap(previous, current));
       }
     }
 
     eventBus.emitEvent("lore.checked", {
       project: input.project,
       actor: "lore_guardian",
-      details: { issues: issues.length },
+      details: { issues: issues.length, locale },
     });
 
-    logOperation("consistency_check", input.project, { issues: issues.length });
+    logOperation("consistency_check", input.project, { issues: issues.length, locale });
     return issues.length === 0
-      ? `Consistency check passed against ${facts.length} registered fact(s).`
-      : `Consistency Check Results (${issues.length} issue(s)):\n\n${issues.map((issue) => `- ${issue}`).join("\n")}`;
+      ? messages.consistencyPassed(facts.length)
+      : messages.consistencyResults(issues.length, issues);
   }
 
   if (input.action === "check_timeline") {
@@ -336,15 +353,24 @@ export const loreGuardian = withErrorHandling(async (input: LoreGuardianInput, p
       .sort((left, right) => (left.chapter ?? left.temporal?.chapterSpanStart ?? 0) - (right.chapter ?? right.temporal?.chapterSpanStart ?? 0));
 
     if (timelineFacts.length === 0) {
-      return "No timeline facts registered. Add facts with chapter numbers to build a timeline.";
+      return messages.timelineEmpty;
     }
 
     const lines = timelineFacts.map((fact) => {
       const chapter = fact.chapter ?? fact.temporal?.chapterSpanStart ?? fact.temporal?.chapterSpanEnd ?? 0;
-      return `  Ch.${String(chapter).padStart(2, "0")} | [${fact.category}] ${fact.key}: ${fact.value}${formatFactSuffix(fact)}`;
+      return messages.timelineLine(
+        chapter,
+        messages.categoryLabels[fact.category] ?? fact.category,
+        fact.key,
+        fact.value,
+        formatFactSuffix(fact, locale),
+      );
     });
-    return `Timeline for "${input.project}":\n${lines.join("\n")}`;
+    return messages.timelineTitle(input.project, lines.join("\n"));
   }
 
-  throw new ScriptoriumError("Unknown action for lore_guardian", "VALIDATION_ERROR");
+  throw new ScriptoriumError(
+    mcpEntry((catalog) => catalog.loreGuardian.unknownAction),
+    "VALIDATION_ERROR",
+  );
 }, "lore_guardian");

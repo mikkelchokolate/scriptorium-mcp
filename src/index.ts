@@ -6,6 +6,8 @@ import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import { getMcpMessages } from "./core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "./core/i18n/runtime.js";
 import eventBus from "./utils/event-bus.js";
 import pluginService from "./services/plugin-service.js";
 import loreService from "./services/lore-service.js";
@@ -24,7 +26,7 @@ import { seriesPlanner, seriesPlannerSchema } from "./tools/series-planner.js";
 import { betaReader, betaReaderSchema } from "./tools/beta-reader.js";
 import { researchQuill, researchQuillSchema } from "./tools/research-quill.js";
 import { projectManager, projectManagerSchema } from "./tools/project-manager.js";
-import { getGenrePrompt, listGenres, GENRE_PROMPTS } from "./prompts/genre-prompts.js";
+import { getGenreGuide, getGenrePrompt, listGenres } from "./prompts/genre-prompts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECTS_ROOT = process.env.SCRIPTORIUM_PROJECTS ?? path.join(__dirname, "..", "projects");
@@ -32,6 +34,11 @@ const PLUGINS_DIR = path.join(__dirname, "..", "plugins");
 const projectService = createProjectService(PROJECTS_ROOT);
 const graphPort = Number(process.env.SCRIPTORIUM_GRAPH_PORT ?? "4319");
 const graphHost = process.env.SCRIPTORIUM_GRAPH_HOST ?? "0.0.0.0";
+const serverMessages = getMcpMessages(SERVER_LOCALE).server;
+
+function resourceLocale(uri: URL): string {
+  return resolveRequestLocale({ locale: uri.searchParams.get("locale") ?? undefined });
+}
 
 await fs.ensureDir(PROJECTS_ROOT);
 loreService.configure({ eventBus });
@@ -72,83 +79,86 @@ const server = new McpServer({
 
 server.tool(
   "world_weaver",
-  "Create and expand worlds, locations, cultures, core systems and rules, timelines, factions, and themes for a project.",
+  serverMessages.toolDescriptions.worldWeaver,
   worldWeaverSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await worldWeaver(input as z.infer<typeof worldWeaverSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "character_forger",
-  "Create, update, inspect, and list characters, including arc tracking.",
+  serverMessages.toolDescriptions.characterForger,
   characterForgerSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await characterForger(input as z.infer<typeof characterForgerSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "story_architect",
-  "Create outlines, update beats, inspect an outline, and suggest plot twists.",
+  serverMessages.toolDescriptions.storyArchitect,
   storyArchitectSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await storyArchitect(input as z.infer<typeof storyArchitectSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "chapter_weaver",
-  "Write, append, inspect, and list chapters, and add cliffhangers.",
+  serverMessages.toolDescriptions.chapterWeaver,
   chapterWeaverSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await chapterWeaver(input as z.infer<typeof chapterWeaverSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "lore_guardian",
-  "Register lore facts, inspect them, and run file-first consistency and timeline checks. Graph support is optional.",
+  serverMessages.toolDescriptions.loreGuardian,
   loreGuardianSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await loreGuardian(input as z.infer<typeof loreGuardianSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "prose_alchemist",
-  "Edit prose, preserve author voice, suggest variants, and check style consistency.",
+  serverMessages.toolDescriptions.proseAlchemist,
   proseAlchemistSchema.shape,
-  async (input) => ({ content: [{ type: "text", text: await proseAlchemist(input as any, PROJECTS_ROOT) }] }),
+  async (input) => ({ content: [{ type: "text", text: await proseAlchemist(input as z.infer<typeof proseAlchemistSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "series_planner",
-  "Plan multi-book series, titles, blurbs, and progression.",
+  serverMessages.toolDescriptions.seriesPlanner,
   seriesPlannerSchema.shape,
-  async (input) => ({ content: [{ type: "text", text: await seriesPlanner(input as any, PROJECTS_ROOT) }] }),
+  async (input) => ({ content: [{ type: "text", text: await seriesPlanner(input as z.infer<typeof seriesPlannerSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "beta_reader",
-  "Simulate reader feedback personas for an excerpt.",
+  serverMessages.toolDescriptions.betaReader,
   betaReaderSchema.shape,
-  async (input) => ({ content: [{ type: "text", text: await betaReader(input as any) }] }),
+  async (input) => ({ content: [{ type: "text", text: await betaReader(input as z.infer<typeof betaReaderSchema>) }] }),
 );
 
 server.tool(
   "research_quill",
-  "Research topics, fact-check claims, and manage bibliography entries.",
+  serverMessages.toolDescriptions.researchQuill,
   researchQuillSchema.shape,
-  async (input) => ({ content: [{ type: "text", text: await researchQuill(input as any, PROJECTS_ROOT) }] }),
+  async (input) => ({ content: [{ type: "text", text: await researchQuill(input as z.infer<typeof researchQuillSchema>, PROJECTS_ROOT) }] }),
 );
 
 server.tool(
   "project_manager",
-  "Create, list, inspect, delete, and export file-backed book projects. The canonical project bible file is world_bible.md.",
+  serverMessages.toolDescriptions.projectManager,
   projectManagerSchema.shape,
   async (input) => ({ content: [{ type: "text", text: await projectManager(input as z.infer<typeof projectManagerSchema>, PROJECTS_ROOT) }] }),
 );
 
+const genrePromptSchema = withLocaleInput(z.object({
+  action: z.enum(["get", "list"]).describe(serverMessages.genrePromptTool.action),
+  genre: z.string().optional().describe(serverMessages.genrePromptTool.genre),
+}));
+
 server.tool(
   "genre_prompt",
-  "Get writing prompt guidance for a supported genre.",
-  {
-    action: z.enum(["get", "list"]).describe("'get' a specific genre prompt or 'list' all available genres"),
-    genre: z.string().optional().describe("Genre key (e.g., 'grimdark_fantasy', 'litrpg')"),
-  },
-  async ({ action, genre }) => {
-    const result = action === "list" ? listGenres() : getGenrePrompt(genre ?? "");
+  serverMessages.toolDescriptions.genrePrompt,
+  genrePromptSchema.shape,
+  async (input) => {
+    const locale = resolveRequestLocale(input);
+    const result = input.action === "list" ? listGenres(locale) : getGenrePrompt(input.genre ?? "", locale);
     return { content: [{ type: "text", text: result }] };
   },
 );
@@ -157,13 +167,14 @@ server.resource(
   "world_bible",
   "scriptorium://project/{project}/world_bible",
   async (uri) => {
+    const messages = getMcpMessages(resourceLocale(uri)).server.resources;
     const match = uri.href.match(/project\/([^/]+)\/world_bible/);
     if (!match) {
-      return { contents: [{ uri: uri.href, text: "Invalid URI" }] };
+      return { contents: [{ uri: uri.href, text: messages.invalidUri }] };
     }
 
     const project = match[1];
-    const text = await projectService.readWorldBible(project) ?? "No World Bible found. Create one with project_manager or world_weaver.";
+    const text = await projectService.readWorldBible(project) ?? messages.noWorldBible;
     return { contents: [{ uri: uri.href, mimeType: "text/markdown", text }] };
   },
 );
@@ -172,13 +183,14 @@ server.resource(
   "characters",
   "scriptorium://project/{project}/characters",
   async (uri) => {
+    const messages = getMcpMessages(resourceLocale(uri)).server.resources;
     const match = uri.href.match(/project\/([^/]+)\/characters/);
     if (!match) {
-      return { contents: [{ uri: uri.href, text: "Invalid URI" }] };
+      return { contents: [{ uri: uri.href, text: messages.invalidUri }] };
     }
 
     const indexPath = path.join(PROJECTS_ROOT, match[1], "characters", "index.json");
-    const text = await fs.pathExists(indexPath) ? JSON.stringify(await fs.readJson(indexPath), null, 2) : "No characters found.";
+    const text = await fs.pathExists(indexPath) ? JSON.stringify(await fs.readJson(indexPath), null, 2) : messages.noCharacters;
     return { contents: [{ uri: uri.href, mimeType: "application/json", text }] };
   },
 );
@@ -187,13 +199,14 @@ server.resource(
   "outline",
   "scriptorium://project/{project}/outline",
   async (uri) => {
+    const messages = getMcpMessages(resourceLocale(uri)).server.resources;
     const match = uri.href.match(/project\/([^/]+)\/outline/);
     if (!match) {
-      return { contents: [{ uri: uri.href, text: "Invalid URI" }] };
+      return { contents: [{ uri: uri.href, text: messages.invalidUri }] };
     }
 
     const filePath = path.join(PROJECTS_ROOT, match[1], "outline.json");
-    const text = await fs.pathExists(filePath) ? JSON.stringify(await fs.readJson(filePath), null, 2) : "No outline found.";
+    const text = await fs.pathExists(filePath) ? JSON.stringify(await fs.readJson(filePath), null, 2) : messages.noOutline;
     return { contents: [{ uri: uri.href, mimeType: "application/json", text }] };
   },
 );
@@ -202,9 +215,10 @@ server.resource(
   "lore_facts",
   "scriptorium://project/{project}/lore_facts",
   async (uri) => {
+    const messages = getMcpMessages(resourceLocale(uri)).server.resources;
     const match = uri.href.match(/project\/([^/]+)\/lore_facts/);
     if (!match) {
-      return { contents: [{ uri: uri.href, text: "Invalid URI" }] };
+      return { contents: [{ uri: uri.href, text: messages.invalidUri }] };
     }
 
     const text = JSON.stringify(await projectService.readLoreFacts(match[1]), null, 2);
@@ -212,43 +226,45 @@ server.resource(
   },
 );
 
+const newBookPromptSchema = withLocaleInput(z.object({
+  project: z.string().describe(serverMessages.prompts.newBookProject),
+  genre: z.string().optional().describe(serverMessages.prompts.newBookGenre),
+}));
+
 server.prompt(
   "new_book_session",
-  "Start a new book writing session with Scriptorium",
-  {
-    project: z.string().describe("Project name"),
-    genre: z.string().optional().describe("Genre"),
-  },
-  async ({ project, genre }) => {
-    const genreGuide = genre ? getGenrePrompt(genre) : listGenres();
+  serverMessages.prompts.newBookDescription,
+  newBookPromptSchema.shape,
+  async ({ project, genre, locale }) => {
+    const resolvedLocale = resolveRequestLocale({ locale });
+    const messages = getMcpMessages(resolvedLocale).server.prompts;
+    const genreGuide = genre ? getGenrePrompt(genre, resolvedLocale) : listGenres(resolvedLocale);
     return {
       messages: [{
         role: "user",
         content: {
           type: "text",
-          text: `I'm starting a new book project called "${project}"${genre ? ` in the ${genre} genre` : ""}.
-
-Use Scriptorium's file-backed tools to help me:
-1. Set up the project with project_manager
-2. Build the world with world_weaver
-3. Create key characters with character_forger
-4. Build the outline with story_architect
-
-${genreGuide}`,
+          text: messages.newBookBody(project, genre, genreGuide),
         },
       }],
     };
   },
 );
+
+const genreWritingPromptSchema = withLocaleInput(z.object({
+  genre: z.string().describe(serverMessages.prompts.genreWritingGenre),
+}));
 
 server.prompt(
   "genre_writing_session",
-  "Start a genre-specific writing session",
-  { genre: z.string().describe("Genre key (e.g., grimdark_fantasy, litrpg)") },
-  async ({ genre }) => {
-    const guide = GENRE_PROMPTS[genre];
+  serverMessages.prompts.genreWritingDescription,
+  genreWritingPromptSchema.shape,
+  async ({ genre, locale }) => {
+    const resolvedLocale = resolveRequestLocale({ locale });
+    const messages = getMcpMessages(resolvedLocale).server.prompts;
+    const guide = getGenreGuide(genre, resolvedLocale);
     if (!guide) {
-      return { messages: [{ role: "user", content: { type: "text", text: `Genre "${genre}" not found. ${listGenres()}` } }] };
+      return { messages: [{ role: "user", content: { type: "text", text: messages.genreNotFound(genre, listGenres(resolvedLocale)) } }] };
     }
 
     return {
@@ -256,98 +272,106 @@ server.prompt(
         role: "user",
         content: {
           type: "text",
-          text: `${guide.system_prompt}
-
-I'm writing a ${guide.name} novel. Use Scriptorium's available tools when they help structure the project.
-
-Key tropes to leverage: ${guide.tropes.join(", ")}
-Things to avoid: ${guide.avoid.join(", ")}`,
+          text: messages.genreWritingBody({
+            systemPrompt: guide.systemPrompt,
+            name: guide.name,
+            tropes: guide.tropes,
+            avoid: guide.avoid,
+          }),
         },
       }],
     };
   },
 );
 
+const consistencyPromptSchema = withLocaleInput(z.object({
+  project: z.string().describe(serverMessages.prompts.consistencyProject),
+}));
+
 server.prompt(
   "consistency_check_session",
-  "Run a consistency check on a project",
-  { project: z.string().describe("Project name") },
-  async ({ project }) => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: `Please review project "${project}" with lore_guardian.
-1. List registered lore facts
-2. Check the timeline for gaps or contradictions
-3. Review for possible naming or continuity issues
-4. Summarize the findings clearly`,
-      },
-    }],
-  }),
+  serverMessages.prompts.consistencyDescription,
+  consistencyPromptSchema.shape,
+  async ({ project, locale }) => {
+    const resolvedLocale = resolveRequestLocale({ locale });
+    const messages = getMcpMessages(resolvedLocale).server.prompts;
+    return {
+      messages: [{
+        role: "user",
+        content: {
+          type: "text",
+          text: messages.consistencyBody(project),
+        },
+      }],
+    };
+  },
 );
+
+const pluginManagerSchema = withLocaleInput(z.object({
+  action: z.enum(["list", "get", "reload", "entity_types", "relation_types", "consistency_rules"]).describe(serverMessages.pluginManager.action),
+  plugin_name: z.string().optional().describe(serverMessages.pluginManager.pluginName),
+}));
 
 server.tool(
   "plugin_manager",
-  "Inspect optional ontology plugins that extend the core file-backed workspace.",
-  {
-    action: z.enum(["list", "get", "reload", "entity_types", "relation_types", "consistency_rules"]).describe("Action to perform"),
-    plugin_name: z.string().optional().describe("Name of the plugin to inspect"),
-  },
-  async ({ action, plugin_name }) => {
+  serverMessages.toolDescriptions.pluginManager,
+  pluginManagerSchema.shape,
+  async (input) => {
+    const locale = resolveRequestLocale(input);
+    const messages = getMcpMessages(locale).server.pluginManager;
     await pluginService.ensureLoaded();
 
-    if (action === "list") {
-      return { content: [{ type: "text", text: pluginService.listPluginsSummary() }] };
+    if (input.action === "list") {
+      return { content: [{ type: "text", text: pluginService.listPluginsSummary(locale) }] };
     }
 
-    if (action === "get") {
-      if (!plugin_name) {
-        return { content: [{ type: "text", text: "Error: 'plugin_name' is required." }] };
+    if (input.action === "get") {
+      if (!input.plugin_name) {
+        return { content: [{ type: "text", text: messages.pluginNameRequired }] };
       }
-      const plugin = pluginService.getPlugin(plugin_name);
+      const plugin = pluginService.getPlugin(input.plugin_name);
       if (!plugin) {
-        return { content: [{ type: "text", text: `Plugin "${plugin_name}" not found. Use 'list' to see available plugins.` }] };
+        return { content: [{ type: "text", text: messages.pluginNotFound(input.plugin_name) }] };
       }
       return { content: [{ type: "text", text: JSON.stringify(plugin, null, 2) }] };
     }
 
-    if (action === "reload") {
+    if (input.action === "reload") {
       await pluginService.loadPlugins(PLUGINS_DIR);
-      return { content: [{ type: "text", text: pluginService.listPluginsSummary() }] };
+      return { content: [{ type: "text", text: pluginService.listPluginsSummary(locale) }] };
     }
 
-    if (action === "entity_types") {
+    if (input.action === "entity_types") {
       const types = pluginService.getAllEntityTypes();
       if (types.length === 0) {
-        return { content: [{ type: "text", text: "No entity types defined in any loaded plugin." }] };
+        return { content: [{ type: "text", text: messages.noEntityTypes }] };
       }
-      const lines = types.map((type) => `  - ${type.name}: ${type.description}${type.properties ? `\n    Properties: ${type.properties.join(", ")}` : ""}`);
-      return { content: [{ type: "text", text: `All Entity Types from Optional Plugins (${types.length}):\n\n${lines.join("\n\n")}` }] };
+      const lines = types.map((type) => `  - ${type.name}: ${type.description}${type.properties ? `\n    ${locale.startsWith("ru") ? "Свойства" : "Properties"}: ${type.properties.join(", ")}` : ""}`);
+      return { content: [{ type: "text", text: messages.entityTypesTitle(types.length, lines.join("\n\n")) }] };
     }
 
-    if (action === "relation_types") {
+    if (input.action === "relation_types") {
       const types = pluginService.getAllRelationTypes();
       if (types.length === 0) {
-        return { content: [{ type: "text", text: "No relation types defined in any loaded plugin." }] };
+        return { content: [{ type: "text", text: messages.noRelationTypes }] };
       }
-      const lines = types.map((type) => `  - ${type.name}: ${type.from} → ${type.to}${type.description ? ` (${type.description})` : ""}`);
-      return { content: [{ type: "text", text: `All Relation Types from Optional Plugins (${types.length}):\n\n${lines.join("\n")}` }] };
+      const lines = types.map((type) => `  - ${type.name}: ${type.from} -> ${type.to}${type.description ? ` (${type.description})` : ""}`);
+      return { content: [{ type: "text", text: messages.relationTypesTitle(types.length, lines.join("\n")) }] };
     }
 
-    if (action === "consistency_rules") {
+    if (input.action === "consistency_rules") {
       const rules = pluginService.getAllConsistencyRules();
       if (rules.length === 0) {
-        return { content: [{ type: "text", text: "No consistency rules defined in any loaded plugin." }] };
+        return { content: [{ type: "text", text: messages.noConsistencyRules }] };
       }
       const lines = rules.map((rule) => `  - [${rule.severity.toUpperCase()}] ${rule.id}: ${rule.description}`);
-      return { content: [{ type: "text", text: `Consistency Rules from Optional Plugins (${rules.length}):\n\n${lines.join("\n")}` }] };
+      return { content: [{ type: "text", text: messages.consistencyRulesTitle(rules.length, lines.join("\n")) }] };
     }
 
-    return { content: [{ type: "text", text: "Unknown action." }] };
+    return { content: [{ type: "text", text: messages.unknownAction }] };
   },
 );
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error(`[Scriptorium] MCP server running. Core mode is file-backed projects; graph and ontology features remain optional extensions.`);
+console.error("[Scriptorium] MCP server running. Core mode is file-backed projects; graph and ontology features remain optional extensions.");

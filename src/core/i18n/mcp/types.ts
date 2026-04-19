@@ -1,0 +1,372 @@
+export interface McpLocaleMessages {
+  runtime: {
+    localeFieldError: string;
+    localeFieldDescription: string;
+  };
+  errorHandler: {
+    invalidProjectName: string;
+    invalidProjectNameSuggestion: string;
+    inspectProjectSuggestion: string;
+    verifyFactsSuggestion: string;
+    inspectWorldBibleSuggestion: string;
+    responseHeading(params: { code: string; message: string }): string;
+    suggestionsHeading: string;
+    auditTrailFooter: string;
+  };
+  projectService: {
+    projectNotFound(project: string): string;
+    atomicWriteFailed(filePath: string, reason: string): string;
+    defaultWorldBibleTitle: string;
+  };
+  worldWeaver: {
+    schema: {
+      action: string;
+      project: string;
+      element: string;
+      name: string;
+      description: string;
+      genre: string;
+    };
+    worldBibleTitle: string;
+    defaultDescription: string;
+    createSuccess(worldName: string): string;
+    expandValidation: string;
+    expandValidationSuggestion: string;
+    elementContentFallback: string;
+    elementFileNotesTitle: string;
+    elementFileAdded: string;
+    elementFileSource: string;
+    entryDescriptionFallback: string;
+    expandSuccess(elementLabel: string, name: string): string;
+    listEmpty: string;
+    listTitle(project: string, lines: string): string;
+    missingBible: string;
+    missingBibleSuggestion: string;
+    unknownAction: string;
+    elementLabels: Record<string, string>;
+    sections: Record<string, string>;
+  };
+  characterForger: {
+    schema: {
+      action: string;
+      project: string;
+      name: string;
+      role: string;
+      backstory: string;
+      motivation: string;
+      arc: string;
+      traits: string;
+      arcStage: string;
+      notes: string;
+    };
+    nameRequired: string;
+    notFound(name: string): string;
+    createSuccess(name: string): string;
+    updateSuccess(name: string): string;
+    arcStageRequired: string;
+    arcTracked(stage: string, name: string): string;
+    listEmpty: string;
+    listTitle(project: string, lines: string): string;
+    unknownAction: string;
+    roleLabels: Record<string, string>;
+  };
+  chapterWeaver: {
+    schema: {
+      action: string;
+      project: string;
+      chapterNumber: string;
+      title: string;
+      content: string;
+      povCharacter: string;
+      location: string;
+      summary: string;
+      cliffhanger: string;
+    };
+    defaultTitle(chapterNumber: number): string;
+    defaultBody: string;
+    narrator: string;
+    headerLabels: {
+      chapter: string;
+      pov: string;
+      location: string;
+      summary: string;
+      cliffhanger: string;
+    };
+    createSuccess(chapterNumber: number, title: string): string;
+    createSuccessWithExtraction(chapterNumber: number, title: string, registered: number): string;
+    appendChapterRequired: string;
+    chapterRequired: string;
+    appendSuccess(chapterNumber: number): string;
+    appendSuccessWithExtraction(chapterNumber: number, registered: number): string;
+    cliffhangerAdded(chapterNumber: number, cliffhanger: string): string;
+    chapterNotFound(chapterNumber: number): string;
+    listEmpty: string;
+    listTitle(project: string, count: number, lines: string): string;
+    unknownAction: string;
+    cliffhangers: string[];
+  };
+  storyArchitect: {
+    schema: {
+      action: string;
+      project: string;
+      structure: string;
+      title: string;
+      premise: string;
+      beat: string;
+      context: string;
+    };
+    structures: Record<string, string[]>;
+    outlineUntitled: string;
+    createSuccess(structure: string, title: string): string;
+    noOutline: string;
+    outlineHeading(title: string, premise: string, structure: string, beatList: string): string;
+    beatRequired: string;
+    beatUpdated(name: string): string;
+    twistHeading(context: string | undefined, twists: string[]): string;
+    unknownAction: string;
+    twistTemplates: string[];
+  };
+  projectManager: {
+    schema: {
+      action: string;
+      project: string;
+      genre: string;
+      description: string;
+      format: string;
+    };
+    listEmpty: string;
+    listTitle(lines: string): string;
+    projectNameRequired(action: "create" | "info" | "delete" | "export"): string;
+    defaultDescription: string;
+    buildBible: {
+      overview: string;
+      locations: string;
+      cultures: string;
+      coreSystems: string;
+      psychologicalLandscape: string;
+      socialContext: string;
+      timeline: string;
+      factions: string;
+      thematicFramework: string;
+      rulesLore: string;
+      lastUpdated: string;
+      genre: string;
+      speculativeComment: string;
+      groundedComment: string;
+      thematicComment: string;
+      loreComment: string;
+    };
+    createSuccess(project: string): string;
+    infoSummary(params: {
+      name: string;
+      genre: string;
+      description: string;
+      created: string;
+      hasBible: boolean;
+      chapters: number;
+      characters: number;
+      hasLore: boolean;
+      hasOutline: boolean;
+    }): string;
+    deleteSuccess(project: string): string;
+    exportPlaceholderTitle(project: string): string;
+    exportNoBible: string;
+    exportChaptersHeading: string;
+    exportSuccess(project: string, format: string, relativePath: string): string;
+    unknownAction: string;
+    present: string;
+    missing: string;
+    none: string;
+  };
+  proseAlchemist: {
+    schema: {
+      action: string;
+      project: string;
+      text: string;
+      style: string;
+      instructions: string;
+      authorVoiceSample: string;
+    };
+    styleGuides: Record<string, string>;
+    customInstructionsHeading: string;
+    authorVoiceSampleHeading: string;
+    styleGuideTitle(style: string): string;
+    styleGuideProject: string;
+    styleGuideUpdated: string;
+    authorVoiceTitle: string;
+    sampleHeading: string;
+    notesHeading: string;
+    setStyleGuideSuccess(style: string, project: string): string;
+    noStyleGuide(styles: string[]): string;
+    editTextRequired: string;
+    editRequest(params: { text: string; styleContext: string; instructions: string }): string;
+    defaultEditInstructions: string;
+    noStyleGuideSet: string;
+    variantsTextRequired: string;
+    variantsRequest(text: string): string;
+    voiceTextRequired: string;
+    noVoiceSample: string;
+    voiceCheckRequest(params: { sample: string; text: string }): string;
+    unknownAction: string;
+  };
+  seriesPlanner: {
+    schema: {
+      action: string;
+      project: string;
+      seriesName: string;
+      genre: string;
+      bookNumber: string;
+      bookTitle: string;
+      bookPremise: string;
+      overarchingPlot: string;
+      protagonist: string;
+      tone: string;
+      keywords: string;
+    };
+    untitledSeries: string;
+    createSeriesSuccess(name: string, genre: string, path: string): string;
+    noSeries: string;
+    defaultBookTitle(bookNumber: number): string;
+    addBookSuccess(bookNumber: number, title: string, seriesName: string): string;
+    noBooks: string;
+    getSeriesSummary(params: { name: string; genre: string; overarchingPlot: string; count: number; bookList: string }): string;
+    generateTitleRequest(params: { genre: string; tone: string; keywords: string; premise: string }): string;
+    generateBlurbRequest(params: { title: string; genre: string; protagonist: string; premise: string; tone: string }): string;
+    unknownAction: string;
+  };
+  betaReader: {
+    schema: {
+      action: string;
+      project: string;
+      text: string;
+      chapterNumber: string;
+      personas: string;
+      genre: string;
+    };
+    personas: Record<string, {
+      name: string;
+      description: string;
+      focus: string[];
+    }>;
+    listPersonasTitle(lines: string): string;
+    simulateTextRequired: string;
+    simulationHeading(chapterRef: string, excerpt: string, personaInstructions: string): string;
+    consensusSummaryInstruction: string;
+    unknownAction: string;
+  };
+  researchQuill: {
+    schema: {
+      action: string;
+      project: string;
+      query: string;
+      context: string;
+      period: string;
+      domain: string;
+      claim: string;
+      source: string;
+    };
+    sourceRequired: string;
+    sourceAdded(title: string, author?: string): string;
+    noSources: string;
+    bibliographyTitle(project: string, count: number, lines: string): string;
+    researchQueryRequired: string;
+    researchRequest(params: { query: string; domain: string; period?: string; context?: string }): string;
+    factCheckClaimRequired: string;
+    factCheckRequest(params: { claim: string; domain: string; context?: string }): string;
+    unknownAction: string;
+  };
+  loreGuardian: {
+    schema: {
+      localeKeyError: string;
+      localizedValueRequired: string;
+      action: string;
+      project: string;
+      projectSanitized: string;
+      text: string;
+      fact: string;
+      category: string;
+    };
+    localizedSectionTitle: string;
+    rulesLoreSection: string;
+    categoryLabels: Record<string, string>;
+    addFactRequired: string;
+    factUpdated(category: string, key: string, value: string): string;
+    factRegistered(category: string, key: string, value: string): string;
+    listEmpty: string;
+    listTitle(project: string, body: string, graphNote: string): string;
+    categoryHeading(category: string): string;
+    graphSummary(nodes: number, relations: number): string;
+    consistencyTextRequired: string;
+    newRecurringEntity(name: string, entityType: string): string;
+    contradiction(key: string, value: string): string;
+    possibleMisspelling(name: string, registered: string): string;
+    timelineGap(previous: number, current: number): string;
+    consistencyPassed(count: number): string;
+    consistencyResults(count: number, issues: string[]): string;
+    timelineEmpty: string;
+    timelineLine(chapter: number, category: string, key: string, value: string, suffix: string): string;
+    timelineTitle(project: string, lines: string): string;
+    unknownAction: string;
+    recurringEntityTypes: Record<string, string>;
+    suffixChapter: string;
+    suffixTime(start: string, end: string): string;
+    suffixForecast(chapters: number): string;
+  };
+  pluginService: {
+    noPlugins: string;
+    loadedSummary(count: number, lines: string): string;
+    loadedLine(params: { name: string; version: string; entityTypes: number; relationTypes: number; description?: string }): string;
+  };
+  server: {
+    toolDescriptions: {
+      worldWeaver: string;
+      characterForger: string;
+      storyArchitect: string;
+      chapterWeaver: string;
+      loreGuardian: string;
+      proseAlchemist: string;
+      seriesPlanner: string;
+      betaReader: string;
+      researchQuill: string;
+      projectManager: string;
+      genrePrompt: string;
+      pluginManager: string;
+    };
+    genrePromptTool: {
+      action: string;
+      genre: string;
+    };
+    resources: {
+      invalidUri: string;
+      noWorldBible: string;
+      noCharacters: string;
+      noOutline: string;
+    };
+    prompts: {
+      newBookDescription: string;
+      newBookProject: string;
+      newBookGenre: string;
+      newBookBody(project: string, genre?: string, genreGuide?: string): string;
+      genreWritingDescription: string;
+      genreWritingGenre: string;
+      genreNotFound(genre: string, genreList: string): string;
+      genreWritingBody(params: { systemPrompt: string; name: string; tropes: string[]; avoid: string[] }): string;
+      consistencyDescription: string;
+      consistencyProject: string;
+      consistencyBody(project: string): string;
+    };
+    pluginManager: {
+      action: string;
+      pluginName: string;
+      pluginNameRequired: string;
+      pluginNotFound(pluginName: string): string;
+      noEntityTypes: string;
+      entityTypesTitle(count: number, lines: string): string;
+      noRelationTypes: string;
+      relationTypesTitle(count: number, lines: string): string;
+      noConsistencyRules: string;
+      consistencyRulesTitle(count: number, lines: string): string;
+      unknownAction: string;
+    };
+  };
+}

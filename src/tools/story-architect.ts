@@ -1,24 +1,31 @@
 import { z } from "zod";
 import fs from "fs-extra";
 import path from "path";
-import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
+
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
 import { createProjectService } from "../services/project-service.js";
 import eventBus from "../utils/event-bus.js";
+import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 
-export const storyArchitectSchema = z.object({
-  action: z.enum(["create_outline", "get_outline", "add_beat", "suggest_twist"]).describe("Action to perform"),
-  project: z.string().describe("Project name/directory"),
-  structure: z.enum(["three_act", "heros_journey", "save_the_cat", "seven_point", "fichtean_curve"]).optional(),
-  title: z.string().optional().describe("Story title"),
-  premise: z.string().optional().describe("One-sentence premise"),
+const STRUCTURE_VALUES = ["three_act", "heros_journey", "save_the_cat", "seven_point", "fichtean_curve"] as const;
+const serverMessages = getMcpMessages(SERVER_LOCALE);
+
+const storyArchitectSchemaBase = z.object({
+  action: z.enum(["create_outline", "get_outline", "add_beat", "suggest_twist"]).describe(serverMessages.storyArchitect.schema.action),
+  project: z.string().describe(serverMessages.storyArchitect.schema.project),
+  structure: z.enum(STRUCTURE_VALUES).optional().describe(serverMessages.storyArchitect.schema.structure),
+  title: z.string().optional().describe(serverMessages.storyArchitect.schema.title),
+  premise: z.string().optional().describe(serverMessages.storyArchitect.schema.premise),
   beat: z.object({
     act: z.string(),
     name: z.string(),
     description: z.string(),
-  }).optional().describe("Story beat to add"),
-  context: z.string().optional().describe("Context for twist suggestion"),
+  }).optional().describe(serverMessages.storyArchitect.schema.beat),
+  context: z.string().optional().describe(serverMessages.storyArchitect.schema.context),
 });
 
+export const storyArchitectSchema = withLocaleInput(storyArchitectSchemaBase);
 export type StoryArchitectInput = z.infer<typeof storyArchitectSchema>;
 
 interface OutlineBeat {
@@ -31,52 +38,11 @@ interface OutlineBeat {
 interface StoryOutline {
   title: string;
   premise: string;
-  structure: keyof typeof STRUCTURES;
+  structure: (typeof STRUCTURE_VALUES)[number];
   beats: OutlineBeat[];
   created: string;
   updated: string;
 }
-
-const STRUCTURES = {
-  three_act: [
-    "Act 1 - Setup", "Inciting Incident", "First Plot Point",
-    "Act 2A - Rising Action", "Midpoint", "Act 2B - Complications",
-    "Second Plot Point", "Act 3 - Climax", "Resolution",
-  ],
-  heros_journey: [
-    "Ordinary World", "Call to Adventure", "Refusal of the Call",
-    "Meeting the Mentor", "Crossing the Threshold", "Tests/Allies/Enemies",
-    "Approach to the Inmost Cave", "Ordeal", "Reward",
-    "The Road Back", "Resurrection", "Return with the Elixir",
-  ],
-  save_the_cat: [
-    "Opening Image", "Theme Stated", "Set-Up", "Catalyst",
-    "Debate", "Break into Two", "B Story", "Fun and Games",
-    "Midpoint", "Bad Guys Close In", "All Is Lost", "Dark Night of the Soul",
-    "Break into Three", "Finale", "Final Image",
-  ],
-  seven_point: [
-    "Hook", "Plot Turn 1", "Pinch Point 1", "Midpoint",
-    "Pinch Point 2", "Plot Turn 2", "Resolution",
-  ],
-  fichtean_curve: [
-    "Inciting Crisis", "Rising Action Crisis 1", "Rising Action Crisis 2",
-    "Rising Action Crisis 3", "Climax", "Falling Action", "Resolution",
-  ],
-} as const;
-
-const TWIST_TEMPLATES = [
-  "A trusted ally has been steering events toward a goal they never revealed.",
-  "The protagonist's most certain memory is incomplete in a consequential way.",
-  "The conflict everyone sees is a symptom of a deeper, older bargain.",
-  "A presumed loss becomes leverage for an opposing force.",
-  "The antagonist is protecting something the protagonist also needs to survive.",
-  "A victory closes one problem and silently activates a worse one.",
-  "Two apparently separate story lines are caused by the same hidden decision.",
-  "The price of success is to become responsible for the system being resisted.",
-  "A missing witness or artifact was removed by someone on the protagonist's side.",
-  "The final obstacle is created by an earlier compromise the protagonist justified.",
-];
 
 function hashText(value: string): number {
   let hash = 0;
@@ -86,13 +52,16 @@ function hashText(value: string): number {
   return hash;
 }
 
-function selectDeterministicTwists(context: string): string[] {
+function selectDeterministicTwists(context: string, locale: string): string[] {
+  const templates = getMcpMessages(locale).storyArchitect.twistTemplates;
   const seed = hashText(context || "story_architect");
-  const start = seed % TWIST_TEMPLATES.length;
-  return Array.from({ length: 3 }, (_, offset) => TWIST_TEMPLATES[(start + offset) % TWIST_TEMPLATES.length]);
+  const start = seed % templates.length;
+  return Array.from({ length: 3 }, (_, offset) => templates[(start + offset) % templates.length]);
 }
 
 export const storyArchitect = withErrorHandling(async (input: StoryArchitectInput, projectsRoot: string): Promise<string> => {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).storyArchitect;
   const projectService = createProjectService(projectsRoot);
   await projectService.ensureProjectDirectories(input.project);
 
@@ -106,10 +75,10 @@ export const storyArchitect = withErrorHandling(async (input: StoryArchitectInpu
 
   if (input.action === "create_outline") {
     const structure = input.structure ?? "three_act";
-    const beats: OutlineBeat[] = STRUCTURES[structure].map((name) => ({ name, description: "", completed: false }));
+    const beats: OutlineBeat[] = messages.structures[structure].map((name) => ({ name, description: "", completed: false }));
     const now = new Date().toISOString();
     const outline: StoryOutline = {
-      title: input.title ?? "Untitled",
+      title: input.title ?? messages.outlineUntitled,
       premise: input.premise ?? "",
       structure,
       beats,
@@ -118,32 +87,37 @@ export const storyArchitect = withErrorHandling(async (input: StoryArchitectInpu
     };
 
     await projectService.withLock(`outline:${input.project}`, () => projectService.writeJsonAtomic(outlinePath, outline));
-    logOperation("outline_created", outline.title, { project: input.project, structure });
+    logOperation("outline_created", outline.title, { project: input.project, structure, locale });
     eventBus.emitEvent("outline.updated", {
       project: input.project,
       actor: "story_architect",
-      details: { action: input.action, structure, title: outline.title },
+      details: { action: input.action, structure, title: outline.title, locale },
     });
-    return `Outline created using "${structure}" for "${outline.title}".`;
+    return messages.createSuccess(structure, outline.title);
   }
 
   if (input.action === "get_outline") {
     const outline = await readOutline();
     if (!outline) {
-      return "No outline found. Use 'create_outline' first.";
+      return messages.noOutline;
     }
-    const beatList = outline.beats.map((beat, index) => `  ${index + 1}. [${beat.completed ? "x" : " "}] ${beat.name}${beat.description ? `: ${beat.description}` : ""}`).join("\n");
-    return `# ${outline.title}\nPremise: ${outline.premise}\nStructure: ${outline.structure}\n\nBeats:\n${beatList}`;
+    const beatList = outline.beats
+      .map((beat, index) => `  ${index + 1}. [${beat.completed ? "x" : " "}] ${beat.name}${beat.description ? `: ${beat.description}` : ""}`)
+      .join("\n");
+    return messages.outlineHeading(outline.title, outline.premise, outline.structure, beatList);
   }
 
   if (input.action === "add_beat") {
     if (!input.beat) {
-      throw new ScriptoriumError("'beat' object is required.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.storyArchitect.beatRequired),
+        "VALIDATION_ERROR",
+      );
     }
 
     const outline = await readOutline();
     if (!outline) {
-      return "No outline found. Use 'create_outline' first.";
+      return messages.noOutline;
     }
 
     const beatName = input.beat.name.toLowerCase();
@@ -167,21 +141,23 @@ export const storyArchitect = withErrorHandling(async (input: StoryArchitectInpu
 
     outline.updated = new Date().toISOString();
     await projectService.withLock(`outline:${input.project}`, () => projectService.writeJsonAtomic(outlinePath, outline));
-    logOperation("outline_beat_added", input.beat.name, { project: input.project });
+    logOperation("outline_beat_added", input.beat.name, { project: input.project, locale });
     eventBus.emitEvent("outline.updated", {
       project: input.project,
       actor: "story_architect",
-      details: { action: input.action, beat: input.beat.name },
+      details: { action: input.action, beat: input.beat.name, locale },
     });
-    return `Beat "${input.beat.name}" updated in outline.`;
+    return messages.beatUpdated(input.beat.name);
   }
 
   if (input.action === "suggest_twist") {
     const context = input.context ?? `${input.project}:${input.title ?? ""}:${input.premise ?? ""}`;
-    const twists = selectDeterministicTwists(context);
-    const prefix = input.context ? `Context: ${input.context}\n\n` : "";
-    return `${prefix}Suggested Plot Twists:\n\n${twists.map((twist, index) => `${index + 1}. ${twist}`).join("\n")}`;
+    const twists = selectDeterministicTwists(context, locale);
+    return messages.twistHeading(input.context, twists);
   }
 
-  throw new ScriptoriumError("Unknown action for story_architect.", "VALIDATION_ERROR");
+  throw new ScriptoriumError(
+    mcpEntry((catalog) => catalog.storyArchitect.unknownAction),
+    "VALIDATION_ERROR",
+  );
 }, "story_architect");

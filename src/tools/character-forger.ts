@@ -1,23 +1,30 @@
 import { z } from "zod";
 import fs from "fs-extra";
 import path from "path";
-import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
+
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
 import { createProjectService } from "../services/project-service.js";
 import eventBus from "../utils/event-bus.js";
+import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 
-export const characterForgerSchema = z.object({
-  action: z.enum(["create", "update", "get", "list", "track_arc"]).describe("Action to perform"),
-  project: z.string().describe("Project name/directory"),
-  name: z.string().optional().describe("Character name"),
-  role: z.enum(["protagonist", "antagonist", "supporting", "minor"]).optional(),
-  backstory: z.string().optional().describe("Character backstory"),
-  motivation: z.string().optional().describe("Core motivation"),
-  arc: z.string().optional().describe("Character arc description"),
-  traits: z.array(z.string()).optional().describe("Personality traits"),
-  arc_stage: z.string().optional().describe("Current arc stage (e.g. 'Act 1 - Ordinary World')"),
-  notes: z.string().optional().describe("Additional notes"),
+const ROLE_VALUES = ["protagonist", "antagonist", "supporting", "minor"] as const;
+const serverMessages = getMcpMessages(SERVER_LOCALE);
+
+const characterForgerSchemaBase = z.object({
+  action: z.enum(["create", "update", "get", "list", "track_arc"]).describe(serverMessages.characterForger.schema.action),
+  project: z.string().describe(serverMessages.characterForger.schema.project),
+  name: z.string().optional().describe(serverMessages.characterForger.schema.name),
+  role: z.enum(ROLE_VALUES).optional().describe(serverMessages.characterForger.schema.role),
+  backstory: z.string().optional().describe(serverMessages.characterForger.schema.backstory),
+  motivation: z.string().optional().describe(serverMessages.characterForger.schema.motivation),
+  arc: z.string().optional().describe(serverMessages.characterForger.schema.arc),
+  traits: z.array(z.string()).optional().describe(serverMessages.characterForger.schema.traits),
+  arc_stage: z.string().optional().describe(serverMessages.characterForger.schema.arcStage),
+  notes: z.string().optional().describe(serverMessages.characterForger.schema.notes),
 });
 
+export const characterForgerSchema = withLocaleInput(characterForgerSchemaBase);
 export type CharacterForgerInput = z.infer<typeof characterForgerSchema>;
 
 interface CharacterArcStage {
@@ -52,6 +59,8 @@ function slugifyName(name: string): string {
 }
 
 export const characterForger = withErrorHandling(async (input: CharacterForgerInput, projectsRoot: string): Promise<string> => {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).characterForger;
   const projectService = createProjectService(projectsRoot);
   await projectService.ensureProjectDirectories(input.project);
 
@@ -71,7 +80,10 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
 
   const requireName = (): string => {
     if (!input.name) {
-      throw new ScriptoriumError("'name' is required for this action.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.characterForger.nameRequired),
+        "VALIDATION_ERROR",
+      );
     }
     return input.name;
   };
@@ -102,13 +114,13 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
 
     index[slug] = { name, role: character.role, file: `${slug}.json` };
     await saveIndex(index);
-    logOperation("character_created", name, { project: input.project });
+    logOperation("character_created", name, { project: input.project, locale });
     eventBus.emitEvent("character.created", {
       project: input.project,
       actor: "character_forger",
-      details: { name, role: character.role },
+      details: { name, role: character.role, locale },
     });
-    return `Character "${name}" created.`;
+    return messages.createSuccess(name);
   }
 
   if (input.action === "update") {
@@ -116,7 +128,10 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     const slug = slugifyName(name);
     const characterPath = path.join(charactersDir, `${slug}.json`);
     if (!await fs.pathExists(characterPath)) {
-      throw new ScriptoriumError(`Character "${name}" not found.`, "NOT_FOUND");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.characterForger.notFound(name)),
+        "NOT_FOUND",
+      );
     }
 
     const index = await loadIndex();
@@ -138,25 +153,31 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
 
     index[slug] = { name: updated.name, role: updated.role, file: `${slug}.json` };
     await saveIndex(index);
-    logOperation("character_updated", name, { project: input.project });
+    logOperation("character_updated", name, { project: input.project, locale });
     eventBus.emitEvent("character.updated", {
       project: input.project,
       actor: "character_forger",
-      details: { name, role: updated.role },
+      details: { name, role: updated.role, locale },
     });
-    return `Character "${name}" updated.`;
+    return messages.updateSuccess(name);
   }
 
   if (input.action === "track_arc") {
     const name = requireName();
     if (!input.arc_stage) {
-      throw new ScriptoriumError("'arc_stage' is required for track_arc.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.characterForger.arcStageRequired),
+        "VALIDATION_ERROR",
+      );
     }
 
     const slug = slugifyName(name);
     const characterPath = path.join(charactersDir, `${slug}.json`);
     if (!await fs.pathExists(characterPath)) {
-      throw new ScriptoriumError(`Character "${name}" not found.`, "NOT_FOUND");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.characterForger.notFound(name)),
+        "NOT_FOUND",
+      );
     }
 
     const existing = await fs.readJson(characterPath) as CharacterRecord;
@@ -173,13 +194,13 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
       await projectService.writeJsonAtomic(characterPath, updated);
     });
 
-    logOperation("character_arc_tracked", name, { project: input.project, stage: input.arc_stage });
+    logOperation("character_arc_tracked", name, { project: input.project, stage: input.arc_stage, locale });
     eventBus.emitEvent("character.updated", {
       project: input.project,
       actor: "character_forger",
-      details: { name, arcStage: input.arc_stage },
+      details: { name, arcStage: input.arc_stage, locale },
     });
-    return `Arc stage "${input.arc_stage}" tracked for "${name}".`;
+    return messages.arcTracked(input.arc_stage, name);
   }
 
   if (input.action === "get") {
@@ -187,7 +208,10 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     const slug = slugifyName(name);
     const characterPath = path.join(charactersDir, `${slug}.json`);
     if (!await fs.pathExists(characterPath)) {
-      throw new ScriptoriumError(`Character "${name}" not found.`, "NOT_FOUND");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.characterForger.notFound(name)),
+        "NOT_FOUND",
+      );
     }
     const character = await fs.readJson(characterPath) as CharacterRecord;
     return JSON.stringify(character, null, 2);
@@ -197,11 +221,14 @@ export const characterForger = withErrorHandling(async (input: CharacterForgerIn
     const index = await loadIndex();
     const entries = Object.values(index);
     if (entries.length === 0) {
-      return "No characters found. Use 'create' to add some.";
+      return messages.listEmpty;
     }
-    const lines = entries.map((entry) => `  - ${entry.name} [${entry.role}]`);
-    return `Characters in "${input.project}":\n${lines.join("\n")}`;
+    const lines = entries.map((entry) => `- ${entry.name} [${messages.roleLabels[entry.role]}]`);
+    return messages.listTitle(input.project, lines.join("\n"));
   }
 
-  throw new ScriptoriumError("Unknown action for character_forger.", "VALIDATION_ERROR");
+  throw new ScriptoriumError(
+    mcpEntry((catalog) => catalog.characterForger.unknownAction),
+    "VALIDATION_ERROR",
+  );
 }, "character_forger");

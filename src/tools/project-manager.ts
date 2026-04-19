@@ -1,72 +1,84 @@
 import fs from "fs-extra";
 import path from "path";
 import { z } from "zod";
-import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
-import eventBus from "../utils/event-bus.js";
-import { createProjectService } from "../services/project-service.js";
-import type { ProjectMeta } from "../core/domain/entities.js";
 
-export const projectManagerSchema = z.object({
-  action: z.enum(["create", "list", "info", "delete", "export"]).describe("Action to perform"),
-  project: z.string().optional().describe("Project name"),
-  genre: z.string().optional().describe("Genre for new project"),
-  description: z.string().optional().describe("Project description"),
-  format: z.enum(["epub", "html", "md"]).optional().describe("Export format (requires pandoc for epub)"),
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
+import type { ProjectMeta } from "../core/domain/entities.js";
+import { createProjectService } from "../services/project-service.js";
+import eventBus from "../utils/event-bus.js";
+import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
+
+const serverMessages = getMcpMessages(SERVER_LOCALE);
+
+const projectManagerSchemaBase = z.object({
+  action: z.enum(["create", "list", "info", "delete", "export"]).describe(serverMessages.projectManager.schema.action),
+  project: z.string().optional().describe(serverMessages.projectManager.schema.project),
+  genre: z.string().optional().describe(serverMessages.projectManager.schema.genre),
+  description: z.string().optional().describe(serverMessages.projectManager.schema.description),
+  format: z.enum(["epub", "html", "md"]).optional().describe(serverMessages.projectManager.schema.format),
 });
 
+export const projectManagerSchema = withLocaleInput(projectManagerSchemaBase);
 export type ProjectManagerInput = z.infer<typeof projectManagerSchema>;
 
-function buildBibleTemplate(project: string, genre: string, description: string): string {
+function buildBibleTemplate(project: string, genre: string, description: string, locale: string): string {
+  const messages = getMcpMessages(locale).projectManager;
   const isSpeculative = /fantasy|scifi|epic|urban|litrpg|grimdark|hardcore|magic|tech/i.test(genre);
   const coreSection = isSpeculative
-    ? "## Core Systems & Rules\n<!-- Physics, magic, technology, or social rules depending on genre -->\n\n## Society & Culture"
-    : "## Psychological Landscape & Themes\n<!-- Deep character psychology, emotional arcs, thematic coherence for literary, memoir, romance -->\n\n## Social & Historical Context\n<!-- For literary and historical fiction -->";
+    ? `## ${messages.buildBible.coreSystems}\n<!-- ${messages.buildBible.speculativeComment} -->\n\n## ${locale.startsWith("ru") ? "Общество и культура" : "Society & Culture"}`
+    : `## ${messages.buildBible.psychologicalLandscape}\n<!-- ${messages.buildBible.groundedComment} -->\n\n## ${messages.buildBible.socialContext}\n<!-- ${locale.startsWith("ru") ? "Для literary и historical fiction." : "For literary and historical fiction."} -->`;
 
-  return `# World Bible — ${project}
+  return `# ${messages.buildBible.overview === "Обзор" ? "Библия мира" : "World Bible"} - ${project}
 
-**Genre:** ${genre}
-**Last Updated:** ${new Date().toISOString()}
+**${messages.buildBible.genre}:** ${genre}
+**${messages.buildBible.lastUpdated}:** ${new Date().toISOString()}
 
-## Overview
+## ${messages.buildBible.overview}
 ${description}
 
-## Locations
+## ${messages.buildBible.locations}
 
-## Cultures & Peoples
+## ${messages.buildBible.cultures}
 
 ${coreSection}
 
-## Timeline
+## ${messages.buildBible.timeline}
 
-## Factions & Organizations
+## ${messages.buildBible.factions}
 
-## Thematic Framework
-<!-- Key for literary fiction, romance arcs, memoir themes, mystery logic -->
+## ${messages.buildBible.thematicFramework}
+<!-- ${messages.buildBible.thematicComment} -->
 
-## Rules & Lore
-<!-- Facts registered via lore_guardian belong here. -->
+## ${messages.buildBible.rulesLore}
+<!-- ${messages.buildBible.loreComment} -->
 `;
 }
 
 export const projectManager = withErrorHandling(async (input: ProjectManagerInput, projectsRoot: string): Promise<string> => {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).projectManager;
   const projectService = createProjectService(projectsRoot);
 
   if (input.action === "list") {
     const projects = await projectService.listProjects();
     if (projects.length === 0) {
-      return "No projects yet. Use 'create' to start a new book project.";
+      return messages.listEmpty;
     }
-    return `Scriptorium Projects:\n${projects.map((project) => `  - ${project}`).join("\n")}`;
+    return messages.listTitle(projects.map((project) => `- ${project}`).join("\n"));
   }
 
   if (input.action === "create") {
     if (!input.project) {
-      throw new ScriptoriumError("'project' name is required for create.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectManager.projectNameRequired("create")),
+        "VALIDATION_ERROR",
+      );
     }
 
     const projectDir = projectService.projectDir(input.project);
     const genre = input.genre ?? "contemporary_literary";
-    const description = input.description ?? "A story waiting to be told.";
+    const description = input.description ?? messages.defaultDescription;
 
     await fs.ensureDir(projectDir);
     await fs.ensureDir(path.join(projectDir, "chapters"));
@@ -87,21 +99,24 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
     };
 
     await projectService.writeProjectMeta(input.project, meta);
-    await projectService.writeWorldBible(input.project, buildBibleTemplate(input.project, genre, description));
+    await projectService.writeWorldBible(input.project, buildBibleTemplate(input.project, genre, description, locale));
     await projectService.removeLegacyLivingBible(input.project);
 
-    logOperation("project_created", input.project, { genre: meta.genre });
+    logOperation("project_created", input.project, { genre: meta.genre, locale });
     eventBus.emitEvent("project.created", {
       project: input.project,
       actor: "project_manager",
-      details: { genre: meta.genre },
+      details: { genre: meta.genre, locale },
     });
-    return `Project "${input.project}" created.\n\nDirectory:\n  ${input.project}/\n  ├── project.json\n  ├── world_bible.md\n  ├── lore_facts.json\n  ├── chapters/\n  ├── characters/\n  ├── world/\n  └── exports/\n\nThe canonical project bible is world_bible.md.`;
+    return messages.createSuccess(input.project);
   }
 
   if (input.action === "info") {
     if (!input.project) {
-      throw new ScriptoriumError("'project' name is required for info.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectManager.projectNameRequired("info")),
+        "VALIDATION_ERROR",
+      );
     }
 
     const meta = await projectService.getProjectMeta(input.project);
@@ -113,36 +128,58 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
     const hasOutline = await fs.pathExists(path.join(projectService.projectDir(input.project), "outline.json"));
     const hasLore = (await projectService.readLoreFacts(input.project)).length > 0 || await fs.pathExists(path.join(projectService.projectDir(input.project), "lore_facts.json"));
 
-    return `Project: ${meta.name}\nGenre: ${meta.genre}\nDescription: ${meta.description || "none"}\nCreated: ${meta.created}\nWorld Bible: ${hasBible ? "present" : "missing"}\n\nProgress:\n  Chapters: ${chapters}\n  Characters: ${characters}\n  Lore Facts File: ${hasLore ? "present" : "missing"}\n  Outline: ${hasOutline ? "present" : "missing"}`;
+    return messages.infoSummary({
+      name: meta.name,
+      genre: meta.genre,
+      description: meta.description || messages.none,
+      created: meta.created,
+      hasBible,
+      chapters,
+      characters,
+      hasLore,
+      hasOutline,
+    });
   }
 
   if (input.action === "delete") {
     if (!input.project) {
-      throw new ScriptoriumError("'project' name is required for delete.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectManager.projectNameRequired("delete")),
+        "VALIDATION_ERROR",
+      );
     }
 
     const projectDir = projectService.projectDir(input.project);
     if (!await fs.pathExists(projectDir)) {
-      throw new ScriptoriumError(`Project "${input.project}" not found.`, "NOT_FOUND");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectService.projectNotFound(input.project!)),
+        "NOT_FOUND",
+      );
     }
 
     await fs.remove(projectDir);
-    logOperation("project_deleted", input.project);
+    logOperation("project_deleted", input.project, { locale });
     eventBus.emitEvent("project.deleted", {
       project: input.project,
       actor: "project_manager",
     });
-    return `Project "${input.project}" has been deleted.`;
+    return messages.deleteSuccess(input.project);
   }
 
   if (input.action === "export") {
     if (!input.project) {
-      throw new ScriptoriumError("'project' name is required for export.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectManager.projectNameRequired("export")),
+        "VALIDATION_ERROR",
+      );
     }
 
     const projectDir = projectService.projectDir(input.project);
     if (!await fs.pathExists(projectDir)) {
-      throw new ScriptoriumError(`Project "${input.project}" not found.`, "NOT_FOUND");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.projectService.projectNotFound(input.project!)),
+        "NOT_FOUND",
+      );
     }
 
     const exportDir = path.join(projectDir, "exports");
@@ -150,9 +187,9 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const baseName = `${input.project}_${timestamp}`;
     const format = input.format ?? "html";
-    const bibleContent = await projectService.readWorldBible(input.project) ?? "# World Bible\n\n(No content yet)";
+    const bibleContent = await projectService.readWorldBible(input.project) ?? `${messages.exportPlaceholderTitle(input.project)}\n\n${messages.exportNoBible}`;
 
-    let output = `# ${input.project.toUpperCase()} - Manuscript Bundle\n\n${bibleContent}\n\n## Chapters\n`;
+    let output = `${messages.exportPlaceholderTitle(input.project)}\n\n${bibleContent}\n\n${messages.exportChaptersHeading}\n`;
     const chaptersDir = path.join(projectDir, "chapters");
     const chapterFiles = (await fs.readdir(chaptersDir).catch(() => [])).filter((file) => file.endsWith(".md")).sort();
 
@@ -166,12 +203,15 @@ export const projectManager = withErrorHandling(async (input: ProjectManagerInpu
     await fs.writeFile(outPath, output, "utf-8");
 
     if (format === "epub") {
-      logOperation("export_attempted", "epub_fallback", { project: input.project, note: "Pandoc is not invoked automatically." });
+      logOperation("export_attempted", "epub_fallback", { project: input.project, note: "Pandoc is not invoked automatically.", locale });
     }
 
-    logOperation("export_completed", format, { project: input.project });
-    return `Exported "${input.project}" as ${format} to exports/${baseName}.${extension}.`;
+    logOperation("export_completed", format, { project: input.project, locale });
+    return messages.exportSuccess(input.project, format, path.posix.join("exports", `${baseName}.${extension}`));
   }
 
-  throw new ScriptoriumError("Unknown action for project_manager.", "VALIDATION_ERROR");
+  throw new ScriptoriumError(
+    mcpEntry((catalog) => catalog.projectManager.unknownAction),
+    "VALIDATION_ERROR",
+  );
 }, "project_manager");

@@ -1,7 +1,9 @@
 import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { OntologyPlugin, EntityTypeDef, RelationTypeDef, ConsistencyRule } from "../core/domain/entities.js";
+
+import type { ConsistencyRule, EntityTypeDef, OntologyPlugin, RelationTypeDef } from "../core/domain/entities.js";
+import { getMcpMessages } from "../core/i18n/mcp/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGINS_DIR = path.join(__dirname, "..", "..", "plugins");
@@ -89,13 +91,20 @@ class PluginService {
     return this.getAllEntityTypes().some((entityType) => entityType.name === typeName);
   }
 
-  public listPluginsSummary(): string {
+  public listPluginsSummary(locale: string = "en"): string {
+    const messages = getMcpMessages(locale).pluginService;
     if (this.plugins.size === 0) {
-      return "No ontology plugins loaded. Plugins are optional extensions.";
+      return messages.noPlugins;
     }
 
-    const lines = Array.from(this.plugins.values()).map((plugin) => `  - ${plugin.name} v${plugin.version}: ${plugin.entityTypes.length} entity types, ${plugin.relationTypes.length} relation types${plugin.description ? ` — ${plugin.description}` : ""}`);
-    return `Loaded optional ontology plugins (${this.plugins.size}):\n\n${lines.join("\n")}`;
+    const lines = Array.from(this.plugins.values()).map((plugin) => messages.loadedLine({
+      name: plugin.name,
+      version: plugin.version,
+      entityTypes: plugin.entityTypes.length,
+      relationTypes: plugin.relationTypes.length,
+      description: plugin.description,
+    }));
+    return messages.loadedSummary(this.plugins.size, lines.join("\n"));
   }
 }
 

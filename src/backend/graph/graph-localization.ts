@@ -3,34 +3,9 @@ import {
   pickLocalizedText,
   type LocalizedTextMap,
 } from "../../core/i18n/locales.js";
+import { exactGraphTranslationMap, getGraphI18n } from "./i18n/index.js";
 import type { GraphLocale, GraphResolvedText } from "./graph-dtos.js";
 import { DEFAULT_GRAPH_LOCALE, SUPPORTED_GRAPH_LOCALES } from "./graph-utils.js";
-
-const EXACT_TRANSLATIONS: Record<string, LocalizedTextMap> = {
-  "World Bible": { en: "World Bible", ru: "Библия мира" },
-  Outline: { en: "Outline", ru: "План" },
-  "Project overview": { en: "Project overview", ru: "Обзор проекта" },
-  project: { en: "project", ru: "проект" },
-  character: { en: "character", ru: "персонаж" },
-  "lore fact": { en: "lore fact", ru: "факт лора" },
-  "Lore fact": { en: "Lore fact", ru: "Факт лора" },
-  chapter: { en: "chapter", ru: "глава" },
-  event: { en: "event", ru: "событие" },
-  entity: { en: "entity", ru: "сущность" },
-  contains: { en: "contains", ru: "содержит" },
-  mentions: { en: "mentions", ru: "упоминает" },
-  affects: { en: "affects", ru: "влияет на" },
-  triggers: { en: "triggers", ru: "запускает" },
-  anchors: { en: "anchors", ru: "привязывает" },
-  canonical: { en: "canonical", ru: "канонический" },
-  neo4j: { en: "neo4j", ru: "neo4j" },
-  derived: { en: "derived", ru: "производный" },
-  "story time": { en: "story time", ru: "время истории" },
-  "publication time": { en: "publication time", ru: "время публикации" },
-  Location: { en: "Location", ru: "Локация" },
-  Character: { en: "Character", ru: "Персонаж" },
-  timeline: { en: "timeline", ru: "таймлайн" },
-};
 
 function normalizeSpacing(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -45,17 +20,21 @@ function buildTextMap(defaultValue: string, overrides: LocalizedTextMap = {}): R
 
 function translateDynamic(value: string): Record<string, string> {
   const normalized = normalizeSpacing(value);
-  const exact = EXACT_TRANSLATIONS[normalized];
+  const exact = exactGraphTranslationMap(normalized);
   if (exact) return buildTextMap(normalized, exact);
 
   const chapterMatch = normalized.match(/^Chapter\s+(\d+)$/i);
   if (chapterMatch) {
-    return buildTextMap(`Chapter ${chapterMatch[1]}`, { ru: `Глава ${chapterMatch[1]}` });
+    return buildTextMap(`Chapter ${chapterMatch[1]}`, {
+      ru: getGraphI18n("ru").chapter(chapterMatch[1]),
+    });
   }
 
   const chapterShortMatch = normalized.match(/^Ch\.\s*(\d+)$/i);
   if (chapterShortMatch) {
-    return buildTextMap(`Ch. ${chapterShortMatch[1]}`, { ru: `Гл. ${chapterShortMatch[1]}` });
+    return buildTextMap(`Ch. ${chapterShortMatch[1]}`, {
+      ru: getGraphI18n("ru").chapterShort(chapterShortMatch[1]),
+    });
   }
 
   if (!normalized.includes("_")) {
@@ -68,8 +47,9 @@ function translateDynamic(value: string): Record<string, string> {
 
   for (const locale of SUPPORTED_GRAPH_LOCALES) {
     if (locale === DEFAULT_GRAPH_LOCALE) continue;
+    const dictionary = getGraphI18n(locale);
     translations[locale] = words
-      .map((word) => EXACT_TRANSLATIONS[word]?.[locale] ?? word.toLowerCase())
+      .map((word) => exactGraphTranslationMap(word)?.[locale] ?? dictionary.exact[word] ?? word.toLowerCase())
       .join(" ");
   }
 

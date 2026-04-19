@@ -1,23 +1,29 @@
 import { z } from "zod";
 import fs from "fs-extra";
 import path from "path";
+
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
 import loreService from "../services/lore-service.js";
 import { createProjectService } from "../services/project-service.js";
 import { withErrorHandling, ScriptoriumError, logOperation } from "../utils/error-handler.js";
 import eventBus from "../utils/event-bus.js";
 
-export const chapterWeaverSchema = z.object({
-  action: z.enum(["create", "append", "get", "list", "add_cliffhanger"]).describe("Action to perform"),
-  project: z.string().describe("Project name/directory"),
-  chapter_number: z.number().optional().describe("Chapter number"),
-  title: z.string().optional().describe("Chapter title"),
-  content: z.string().optional().describe("Chapter content to write or append"),
-  pov_character: z.string().optional().describe("POV character for this chapter"),
-  location: z.string().optional().describe("Primary location"),
-  summary: z.string().optional().describe("Chapter summary/synopsis"),
-  cliffhanger: z.string().optional().describe("Cliffhanger ending suggestion"),
+const serverMessages = getMcpMessages(SERVER_LOCALE);
+
+const chapterWeaverSchemaBase = z.object({
+  action: z.enum(["create", "append", "get", "list", "add_cliffhanger"]).describe(serverMessages.chapterWeaver.schema.action),
+  project: z.string().describe(serverMessages.chapterWeaver.schema.project),
+  chapter_number: z.number().optional().describe(serverMessages.chapterWeaver.schema.chapterNumber),
+  title: z.string().optional().describe(serverMessages.chapterWeaver.schema.title),
+  content: z.string().optional().describe(serverMessages.chapterWeaver.schema.content),
+  pov_character: z.string().optional().describe(serverMessages.chapterWeaver.schema.povCharacter),
+  location: z.string().optional().describe(serverMessages.chapterWeaver.schema.location),
+  summary: z.string().optional().describe(serverMessages.chapterWeaver.schema.summary),
+  cliffhanger: z.string().optional().describe(serverMessages.chapterWeaver.schema.cliffhanger),
 });
 
+export const chapterWeaverSchema = withLocaleInput(chapterWeaverSchemaBase);
 export type ChapterWeaverInput = z.infer<typeof chapterWeaverSchema>;
 
 interface ChapterIndexEntry {
@@ -29,20 +35,14 @@ interface ChapterIndexEntry {
   created: string;
 }
 
-function generateCliffhanger(): string {
-  const hooks = [
-    "The door opened, and the one person they trusted least stepped through it.",
-    "The message arrived seconds too late to stop what had already begun.",
-    "What looked like a rescue was actually the trap closing.",
-    "The answer they needed proved they had been asking the wrong question.",
-    "Someone in the room had known the truth from the beginning.",
-    "The signal died just as the impossible finally made sense.",
-    "The promise that held everything together was no longer true.",
-  ];
-  return hooks[Math.floor(Math.random() * hooks.length)];
+function generateCliffhanger(locale: string): string {
+  const messages = getMcpMessages(locale).chapterWeaver;
+  return messages.cliffhangers[Math.floor(Math.random() * messages.cliffhangers.length)];
 }
 
 export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput, projectsRoot: string): Promise<string> => {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).chapterWeaver;
   const projectService = createProjectService(projectsRoot);
   await projectService.ensureProjectDirectories(input.project);
 
@@ -63,9 +63,17 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
   if (input.action === "create") {
     const index = await loadIndex();
     const chapterNumber = input.chapter_number ?? (index.length + 1);
-    const title = input.title ?? `Chapter ${chapterNumber}`;
-    const body = input.content ?? "*[Chapter content to be written...]*\n";
-    const header = `# ${title}\n**Chapter:** ${chapterNumber}\n**POV:** ${input.pov_character ?? "Narrator"}\n**Location:** ${input.location ?? "Unknown"}\n**Summary:** ${input.summary ?? ""}\n\n---\n\n`;
+    const title = input.title ?? messages.defaultTitle(chapterNumber);
+    const body = input.content ?? messages.defaultBody;
+    const header = `# ${title}
+**${messages.headerLabels.chapter}:** ${chapterNumber}
+**${messages.headerLabels.pov}:** ${input.pov_character ?? messages.narrator}
+**${messages.headerLabels.location}:** ${input.location ?? (locale.startsWith("ru") ? "Неизвестно" : "Unknown")}
+**${messages.headerLabels.summary}:** ${input.summary ?? ""}
+
+---
+
+`;
 
     await projectService.writeChapter(input.project, chapterNumber, `${header}${body}`);
 
@@ -74,7 +82,7 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
       number: chapterNumber,
       title,
       file: `chapter_${padded}.md`,
-      pov: input.pov_character ?? "Narrator",
+      pov: input.pov_character ?? messages.narrator,
       summary: input.summary ?? "",
       created: new Date().toISOString(),
     };
@@ -91,23 +99,26 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
     if (input.content && input.content.length > 50 && loreService.isConnected) {
       const extraction = await loreService.autoExtractAndRegisterFacts(input.content, input.project, chapterNumber);
       if (extraction.registered > 0) {
-        return `Chapter ${chapterNumber} "${title}" created.\n\nGraph extension registered ${extraction.registered} extracted entit${extraction.registered === 1 ? "y" : "ies"}.`;
+        return messages.createSuccessWithExtraction(chapterNumber, title, extraction.registered);
       }
     }
 
-    logOperation("chapter_created", title, { project: input.project, chapter: chapterNumber });
+    logOperation("chapter_created", title, { project: input.project, chapter: chapterNumber, locale });
     eventBus.emitEvent("chapter.created", {
       project: input.project,
       actor: "chapter_weaver",
-      details: { chapter: chapterNumber, title },
+      details: { chapter: chapterNumber, title, locale },
     });
-    return `Chapter ${chapterNumber} "${title}" created.`;
+    return messages.createSuccess(chapterNumber, title);
   }
 
   if (input.action === "append") {
     const chapterNumber = input.chapter_number;
     if (!chapterNumber) {
-      throw new ScriptoriumError("'chapter_number' is required for append.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.chapterWeaver.appendChapterRequired),
+        "VALIDATION_ERROR",
+      );
     }
     const content = input.content ?? "";
     await projectService.appendToChapter(input.project, chapterNumber, content);
@@ -115,42 +126,52 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
     if (content.length > 50 && loreService.isConnected) {
       const extraction = await loreService.autoExtractAndRegisterFacts(content, input.project, chapterNumber);
       if (extraction.registered > 0) {
-        return `Content appended to Chapter ${chapterNumber}.\n\nGraph extension registered ${extraction.registered} extracted entit${extraction.registered === 1 ? "y" : "ies"}.`;
+        return messages.appendSuccessWithExtraction(chapterNumber, extraction.registered);
       }
     }
 
-    logOperation("chapter_appended", String(chapterNumber), { project: input.project });
+    logOperation("chapter_appended", String(chapterNumber), { project: input.project, locale });
     eventBus.emitEvent("chapter.appended", {
       project: input.project,
       actor: "chapter_weaver",
-      details: { chapter: chapterNumber, contentLength: content.length },
+      details: { chapter: chapterNumber, contentLength: content.length, locale },
     });
-    return `Content appended to Chapter ${chapterNumber}.`;
+    return messages.appendSuccess(chapterNumber);
   }
 
   if (input.action === "add_cliffhanger") {
     const chapterNumber = input.chapter_number;
     if (!chapterNumber) {
-      throw new ScriptoriumError("'chapter_number' is required.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.chapterWeaver.chapterRequired),
+        "VALIDATION_ERROR",
+      );
     }
-    const cliffhanger = input.cliffhanger ?? generateCliffhanger();
-    await projectService.appendToChapter(input.project, chapterNumber, `\n\n---\n*Cliffhanger:* ${cliffhanger}\n`);
+    const cliffhanger = input.cliffhanger ?? generateCliffhanger(locale);
+    await projectService.appendToChapter(
+      input.project,
+      chapterNumber,
+      `\n\n---\n*${messages.headerLabels.cliffhanger}:* ${cliffhanger}\n`,
+    );
     eventBus.emitEvent("chapter.appended", {
       project: input.project,
       actor: "chapter_weaver",
-      details: { chapter: chapterNumber, cliffhanger },
+      details: { chapter: chapterNumber, cliffhanger, locale },
     });
-    return `Cliffhanger added to Chapter ${chapterNumber}:\n"${cliffhanger}"`;
+    return messages.cliffhangerAdded(chapterNumber, cliffhanger);
   }
 
   if (input.action === "get") {
     const chapterNumber = input.chapter_number;
     if (!chapterNumber) {
-      throw new ScriptoriumError("'chapter_number' is required.", "VALIDATION_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((catalog) => catalog.chapterWeaver.chapterRequired),
+        "VALIDATION_ERROR",
+      );
     }
     const content = await projectService.readChapter(input.project, chapterNumber);
     if (!content) {
-      return `Chapter ${chapterNumber} not found.`;
+      return messages.chapterNotFound(chapterNumber);
     }
     return content;
   }
@@ -158,11 +179,18 @@ export const chapterWeaver = withErrorHandling(async (input: ChapterWeaverInput,
   if (input.action === "list") {
     const index = await loadIndex();
     if (index.length === 0) {
-      return "No chapters found. Use 'create' to start writing.";
+      return messages.listEmpty;
     }
-    const lines = index.map((chapter) => `  Ch.${String(chapter.number).padStart(2, "0")} — ${chapter.title} [POV: ${chapter.pov}]`);
-    return `Chapters in "${input.project}" (${index.length} total):\n${lines.join("\n")}`;
+
+    const lines = index.map((chapter) => locale.startsWith("ru")
+      ? `- Гл. ${String(chapter.number).padStart(2, "0")} - ${chapter.title} [POV: ${chapter.pov}]`
+      : `- Ch. ${String(chapter.number).padStart(2, "0")} - ${chapter.title} [POV: ${chapter.pov}]`);
+
+    return messages.listTitle(input.project, index.length, lines.join("\n"));
   }
 
-  throw new ScriptoriumError("Unknown action for chapter_weaver.", "VALIDATION_ERROR");
+  throw new ScriptoriumError(
+    mcpEntry((catalog) => catalog.chapterWeaver.unknownAction),
+    "VALIDATION_ERROR",
+  );
 }, "chapter_weaver");

@@ -1,18 +1,18 @@
 import fs from "fs-extra";
 import path from "path";
 
-import { createProjectService, type ProjectService } from "../../services/project-service.js";
 import type { LocalizedTextMap } from "../../core/i18n/locales.js";
-import type { LoreService } from "../../services/lore-service.js";
 import type { Contradiction, LoreFact, RelationEdge, TimelineEvent } from "../../core/domain/entities.js";
+import { createProjectService, type ProjectService } from "../../services/project-service.js";
+import type { LoreService } from "../../services/lore-service.js";
 import type {
-  GraphForecastChainStepDTO,
   GraphForecastEvidenceDTO,
   GraphForecastResponseDTO,
   GraphForecastRiskDTO,
   GraphLocale,
 } from "./graph-dtos.js";
 import { resolveGraphText } from "./graph-localization.js";
+import { graphMessageMap } from "./i18n/index.js";
 import { clampForecastHorizon, normalizeGraphLocale, slugifyGraphId, uniqueNumbers } from "./graph-utils.js";
 
 type ForecastOptions = {
@@ -67,7 +67,12 @@ export class GraphForecastingService {
       this.readContradictions(project),
     ]);
 
-    const currentChapter = Math.max(0, ...chapters, ...facts.map((fact) => fact.chapter ?? 0), ...timelineEvents.map((event) => event.chapter ?? 0));
+    const currentChapter = Math.max(
+      0,
+      ...chapters,
+      ...facts.map((fact) => fact.chapter ?? 0),
+      ...timelineEvents.map((event) => event.chapter ?? 0),
+    );
     const futureLimit = currentChapter + horizon;
     const risks: GraphForecastRiskDTO[] = [];
 
@@ -122,26 +127,20 @@ export class GraphForecastingService {
         type: contradiction.issue.toLowerCase().includes("orphaned") ? "orphaned_arc" : "contradiction",
         severity,
         confidence: severity === "critical" ? 0.92 : 0.76,
-        title: resolveGraphText(locale, {
-          en: contradiction.issue,
-          ru: contradiction.issue.toLowerCase().includes("orphaned")
-            ? `Изолированная сюжетная линия: ${contradiction.entity}`
-            : `Противоречие: ${contradiction.entity}`,
-        }),
-        summary: resolveGraphText(locale, {
-          en: contradiction.details ?? contradiction.issue,
-          ru: contradiction.details
-            ? `Детали: ${contradiction.details}`
-            : `Проверьте сущность "${contradiction.entity}" и связанные факты перед дальнейшими главами.`,
-        }),
+        title: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.contradictionTitle(contradiction.issue, contradiction.entity)
+        )),
+        summary: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.contradictionSummary(contradiction.details, contradiction.entity)
+        )),
         impactedChapters: uniqueNumbers([contradiction.chapter]),
         evidence: [
-          buildEvidence(locale, contradiction.issue.toLowerCase().includes("orphaned") ? "entity" : "contradiction", {
-            en: contradiction.issue,
-            ru: contradiction.issue.toLowerCase().includes("orphaned")
-              ? `Сущность "${contradiction.entity}" не связана с остальным графом`
-              : `Обнаружено противоречие для "${contradiction.entity}"`,
-          }, { chapter: contradiction.chapter, nodeIds }),
+          buildEvidence(
+            locale,
+            contradiction.issue.toLowerCase().includes("orphaned") ? "entity" : "contradiction",
+            graphMessageMap((messages) => messages.forecast.contradictionEvidence(contradiction.issue, contradiction.entity)),
+            { chapter: contradiction.chapter, nodeIds },
+          ),
         ],
         nodeIds,
       };
@@ -168,7 +167,10 @@ export class GraphForecastingService {
       if (current - previous < 4) continue;
       if (current <= currentChapter || previous > futureLimit) continue;
 
-      const impacted = uniqueNumbers(Array.from({ length: current - previous - 1 }, (_, offset) => previous + offset + 1).filter((chapter) => chapter > currentChapter && chapter <= futureLimit));
+      const impacted = uniqueNumbers(
+        Array.from({ length: current - previous - 1 }, (_, offset) => previous + offset + 1)
+          .filter((chapter) => chapter > currentChapter && chapter <= futureLimit),
+      );
       if (impacted.length === 0) continue;
 
       risks.push({
@@ -176,20 +178,17 @@ export class GraphForecastingService {
         type: "timeline_gap",
         severity: impacted.length > 3 ? "warning" : "info",
         confidence: impacted.length > 3 ? 0.72 : 0.6,
-        title: resolveGraphText(locale, {
-          en: `Timeline gap between chapters ${previous} and ${current}`,
-          ru: `Пробел в таймлайне между главами ${previous} и ${current}`,
-        }),
-        summary: resolveGraphText(locale, {
-          en: `The graph has no temporal anchors for chapters ${impacted.join(", ")}. This makes continuity drift more likely within the next ${impacted.length} chapter(s).`,
-          ru: `В графе нет временных опор для глав ${impacted.join(", ")}. Это повышает риск потери непрерывности в ближайших ${impacted.length} главах.`,
-        }),
+        title: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.timelineGapTitle(previous, current)
+        )),
+        summary: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.timelineGapSummary(impacted)
+        )),
         impactedChapters: impacted,
         evidence: [
-          buildEvidence(locale, "timeline", {
-            en: `Known anchors: chapter ${previous} and chapter ${current}`,
-            ru: `Известные временные точки: глава ${previous} и глава ${current}`,
-          }),
+          buildEvidence(locale, "timeline", graphMessageMap((messages) =>
+            messages.forecast.timelineEvidence(previous, current)
+          )),
         ],
       });
     }
@@ -216,10 +215,10 @@ export class GraphForecastingService {
 
       const hasResolution = facts.some((candidate) =>
         (candidate.chapter ?? 0) >= expectedChapter &&
-        (candidate.key.toLowerCase() === fact.key.toLowerCase() || candidate.value.toLowerCase().includes(fact.key.toLowerCase())),
+        (candidate.key.toLowerCase() === fact.key.toLowerCase() || candidate.value.toLowerCase().includes(fact.key.toLowerCase()))
       ) || timelineEvents.some((candidate) =>
         candidate.chapter >= expectedChapter &&
-        (candidate.entity.toLowerCase() === fact.key.toLowerCase() || candidate.targetEntity?.toLowerCase() === fact.key.toLowerCase()),
+        (candidate.entity.toLowerCase() === fact.key.toLowerCase() || candidate.targetEntity?.toLowerCase() === fact.key.toLowerCase())
       );
 
       if (hasResolution) continue;
@@ -230,20 +229,15 @@ export class GraphForecastingService {
         type: "foreshadowing_gap",
         severity: "warning",
         confidence: 0.74,
-        title: resolveGraphText(locale, {
-          en: `Foreshadowed thread may stall by chapter ${expectedChapter}`,
-          ru: `Намеченная линия может зависнуть к главе ${expectedChapter}`,
-        }),
-        summary: resolveGraphText(locale, {
-          en: `The fact "${fact.key}" projects forward ${forecastHorizon} chapter(s), but the graph does not show a matching payoff yet.`,
-          ru: `Факт "${fact.key}" протянут вперёд на ${forecastHorizon} глав, но в графе пока не видно соответствующей развязки.`,
-        }),
+        title: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.foreshadowingFactTitle(expectedChapter)
+        )),
+        summary: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.foreshadowingFactSummary(fact.key, forecastHorizon)
+        )),
         impactedChapters: [expectedChapter],
         evidence: [
-          buildEvidence(locale, "fact", {
-            en: `${fact.key}: ${fact.value}`,
-            ru: `${fact.key}: ${fact.value}`,
-          }, { chapter: fact.chapter, nodeIds }),
+          buildEvidence(locale, "fact", graphMessageMap(() => `${fact.key}: ${fact.value}`), { chapter: fact.chapter, nodeIds }),
         ],
         nodeIds,
       });
@@ -258,7 +252,7 @@ export class GraphForecastingService {
 
       const chainExists = timelineEvents.some((event) =>
         event.chapter >= expectedChapter &&
-        (event.entity === relation.from || event.entity === relation.to || event.targetEntity === relation.from || event.targetEntity === relation.to),
+        (event.entity === relation.from || event.entity === relation.to || event.targetEntity === relation.from || event.targetEntity === relation.to)
       );
 
       if (chainExists) continue;
@@ -269,20 +263,20 @@ export class GraphForecastingService {
         type: "foreshadowing_gap",
         severity: "warning",
         confidence: 0.71,
-        title: resolveGraphText(locale, {
-          en: `Causal setup lacks a visible payoff by chapter ${expectedChapter}`,
-          ru: `Причинная связка не получает видимой развязки к главе ${expectedChapter}`,
-        }),
-        summary: resolveGraphText(locale, {
-          en: `${relation.from} ${relation.type.replace(/_/g, " ").toLowerCase()} ${relation.to}, but no projected follow-up appears in the next ${forecastHorizon} chapter(s).`,
-          ru: `Связь ${relation.from} → ${relation.to} (${relation.type.replace(/_/g, " ").toLowerCase()}) пока не получает продолжения в ближайших ${forecastHorizon} главах.`,
-        }),
+        title: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.causalForeshadowingTitle(expectedChapter)
+        )),
+        summary: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.causalForeshadowingSummary(relation.from, relation.type, relation.to, forecastHorizon)
+        )),
         impactedChapters: [expectedChapter],
         evidence: [
-          buildEvidence(locale, "relation", {
-            en: `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`,
-            ru: `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`,
-          }, { chapter: anchorChapter, edgeIds: edgeId ? [edgeId] : undefined }),
+          buildEvidence(
+            locale,
+            "relation",
+            graphMessageMap(() => `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`),
+            { chapter: anchorChapter, edgeIds: edgeId ? [edgeId] : undefined },
+          ),
         ],
         causalChain: [{
           from: relation.from,
@@ -315,7 +309,7 @@ export class GraphForecastingService {
 
       const hasPrecondition = timelineEvents.some((event) =>
         event.chapter < anchorChapter &&
-        (event.entity === relation.from || event.targetEntity === relation.from),
+        (event.entity === relation.from || event.targetEntity === relation.from)
       );
       if (hasPrecondition) continue;
 
@@ -325,20 +319,20 @@ export class GraphForecastingService {
         type: "causal_gap",
         severity: "critical",
         confidence: 0.84,
-        title: resolveGraphText(locale, {
-          en: `High-impact causal jump around chapter ${anchorChapter}`,
-          ru: `Резкий причинный скачок около главы ${anchorChapter}`,
-        }),
-        summary: resolveGraphText(locale, {
-          en: `A strong causal relation is scheduled near chapter ${anchorChapter}, but the graph does not show enough earlier setup for ${relation.from}.`,
-          ru: `Сильная причинная связь намечена около главы ${anchorChapter}, но в графе пока не видно достаточной подготовки для ${relation.from}.`,
-        }),
+        title: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.causalGapTitle(anchorChapter)
+        )),
+        summary: resolveGraphText(locale, graphMessageMap((messages) =>
+          messages.forecast.causalGapSummary(anchorChapter, relation.from)
+        )),
         impactedChapters: [anchorChapter],
         evidence: [
-          buildEvidence(locale, "relation", {
-            en: `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`,
-            ru: `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`,
-          }, { chapter: anchorChapter, edgeIds: edgeId ? [edgeId] : undefined }),
+          buildEvidence(
+            locale,
+            "relation",
+            graphMessageMap(() => `${relation.from} ${relation.type.replace(/_/g, " ")} ${relation.to}`),
+            { chapter: anchorChapter, edgeIds: edgeId ? [edgeId] : undefined },
+          ),
         ],
         causalChain: [{
           from: relation.from,
@@ -374,19 +368,16 @@ export class GraphForecastingService {
       type: "orphaned_arc",
       severity: incomplete.length >= 4 ? "warning" : "info",
       confidence: incomplete.length >= 4 ? 0.63 : 0.52,
-      title: resolveGraphText(locale, {
-        en: "Several future beats remain structurally unresolved",
-        ru: "Несколько будущих битов остаются структурно неразрешёнными",
-      }),
-      summary: resolveGraphText(locale, {
-        en: `${incomplete.length} outline beat(s) are still open while the forecast window reaches chapter ${futureLimit}. This can turn into dangling arcs if the graph does not gain new links soon.`,
-        ru: `${incomplete.length} битов плана всё ещё не закрыты, а окно прогноза уже доходит до главы ${futureLimit}. Без новых связей в графе это легко превращается в висящие линии.`,
-      }),
+      title: resolveGraphText(locale, graphMessageMap((messages) => messages.forecast.outlineTitle)),
+      summary: resolveGraphText(locale, graphMessageMap((messages) =>
+        messages.forecast.outlineSummary(incomplete.length, futureLimit)
+      )),
       impactedChapters: uniqueNumbers([currentChapter + 1, futureLimit]),
-      evidence: incomplete.slice(0, 3).map((beat, index) => buildEvidence(locale, "outline", {
-        en: beat.name || `Open beat ${index + 1}`,
-        ru: beat.name || `Незавершённый бит ${index + 1}`,
-      })),
+      evidence: incomplete.slice(0, 3).map((beat, index) => buildEvidence(
+        locale,
+        "outline",
+        graphMessageMap((messages) => beat.name || messages.forecast.openBeat(index + 1)),
+      )),
     }];
   }
 

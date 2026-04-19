@@ -1,27 +1,35 @@
 import { z } from "zod";
+import fs from "fs-extra";
+import path from "path";
 
-export const researchQuillSchema = z.object({
-  action: z.enum(["research", "fact_check", "add_source", "list_sources"]).describe("Action to perform"),
-  project: z.string().describe("Project name/directory"),
-  query: z.string().optional().describe("Research query or topic"),
-  context: z.string().optional().describe("Context from the book where this research is needed"),
-  period: z.string().optional().describe("Historical period (e.g., 'Medieval Europe 1200s')"),
-  domain: z.enum(["history", "science", "geography", "culture", "technology", "medicine", "military", "mythology", "general"]).optional(),
-  claim: z.string().optional().describe("Specific claim to fact-check"),
+import { getMcpMessages } from "../core/i18n/mcp/index.js";
+import { SERVER_LOCALE, resolveRequestLocale, withLocaleInput } from "../core/i18n/runtime.js";
+
+const DOMAIN_VALUES = ["history", "science", "geography", "culture", "technology", "medicine", "military", "mythology", "general"] as const;
+const serverMessages = getMcpMessages(SERVER_LOCALE);
+
+const researchQuillSchemaBase = z.object({
+  action: z.enum(["research", "fact_check", "add_source", "list_sources"]).describe(serverMessages.researchQuill.schema.action),
+  project: z.string().describe(serverMessages.researchQuill.schema.project),
+  query: z.string().optional().describe(serverMessages.researchQuill.schema.query),
+  context: z.string().optional().describe(serverMessages.researchQuill.schema.context),
+  period: z.string().optional().describe(serverMessages.researchQuill.schema.period),
+  domain: z.enum(DOMAIN_VALUES).optional().describe(serverMessages.researchQuill.schema.domain),
+  claim: z.string().optional().describe(serverMessages.researchQuill.schema.claim),
   source: z.object({
     title: z.string(),
     author: z.string().optional(),
     url: z.string().optional(),
     notes: z.string().optional(),
-  }).optional().describe("Source to add to project bibliography"),
+  }).optional().describe(serverMessages.researchQuill.schema.source),
 });
 
+export const researchQuillSchema = withLocaleInput(researchQuillSchemaBase);
 export type ResearchQuillInput = z.infer<typeof researchQuillSchema>;
 
-import fs from "fs-extra";
-import path from "path";
-
 export async function researchQuill(input: ResearchQuillInput, projectsRoot: string): Promise<string> {
+  const locale = resolveRequestLocale(input);
+  const messages = getMcpMessages(locale).researchQuill;
   const projectDir = path.join(projectsRoot, input.project);
   await fs.ensureDir(projectDir);
   const sourcesPath = path.join(projectDir, "bibliography.json");
@@ -32,36 +40,38 @@ export async function researchQuill(input: ResearchQuillInput, projectsRoot: str
   }
 
   if (input.action === "add_source") {
-    if (!input.source) return "Error: 'source' object is required.";
+    if (!input.source) return messages.sourceRequired;
     sources.push({ ...input.source, added: new Date().toISOString() });
     await fs.writeJson(sourcesPath, sources, { spaces: 2 });
-    return `Source added: "${input.source.title}"${input.source.author ? " by " + input.source.author : ""}`;
+    return messages.sourceAdded(input.source.title, input.source.author);
   }
 
   if (input.action === "list_sources") {
-    if (sources.length === 0) return "No sources in bibliography. Use 'add_source' to add references.";
-    const lines = sources.map((s: any, i: number) =>
-      `  ${i + 1}. "${s.title}"${s.author ? " — " + s.author : ""}${s.url ? "\n     URL: " + s.url : ""}${s.notes ? "\n     Notes: " + s.notes : ""}`
+    if (sources.length === 0) return messages.noSources;
+    const lines = sources.map((source: any, index: number) =>
+      `  ${index + 1}. "${source.title}"${source.author ? ` - ${source.author}` : ""}${source.url ? `\n     URL: ${source.url}` : ""}${source.notes ? `\n     ${locale.startsWith("ru") ? "Заметки" : "Notes"}: ${source.notes}` : ""}`,
     );
-    return `📚 Bibliography for "${input.project}" (${sources.length} sources):\n\n${lines.join("\n\n")}`;
+    return messages.bibliographyTitle(input.project, sources.length, lines.join("\n\n"));
   }
 
   if (input.action === "research") {
-    if (!input.query) return "Error: 'query' is required for research.";
-    const domain = input.domain ?? "general";
-    const period = input.period ? `\n**Historical Period:** ${input.period}` : "";
-    const context = input.context ? `\n**Book Context:** ${input.context}` : "";
-
-    return `🔍 Research Request\n\n**Query:** ${input.query}\n**Domain:** ${domain}${period}${context}\n\n**Instructions for AI:**\nProvide comprehensive research on this topic for fiction writing purposes:\n\n1. **Key Facts** — 5-7 accurate, specific facts relevant to the query\n2. **Common Misconceptions** — What fiction often gets wrong about this topic\n3. **Authentic Details** — Sensory/specific details that will make writing feel real (sounds, smells, textures, terminology)\n4. **Dramatic Potential** — Aspects of this topic that create natural narrative tension\n5. **Recommended Sources** — 3 reliable sources for deeper research\n\n⚠️ Note: Always verify critical facts with primary sources before publication.`;
+    if (!input.query) return messages.researchQueryRequired;
+    return messages.researchRequest({
+      query: input.query,
+      domain: input.domain ?? "general",
+      period: input.period,
+      context: input.context,
+    });
   }
 
   if (input.action === "fact_check") {
-    if (!input.claim) return "Error: 'claim' is required for fact-checking.";
-    const context = input.context ? `\n**Book Context:** ${input.context}` : "";
-    const domain = input.domain ?? "general";
-
-    return `✅ Fact-Check Request\n\n**Claim to verify:** "${input.claim}"\n**Domain:** ${domain}${context}\n\n**Instructions for AI:**\nAnalyze this claim for factual accuracy:\n\n1. **Verdict:** TRUE / FALSE / PARTIALLY TRUE / ANACHRONISTIC / PLAUSIBLE BUT UNVERIFIED\n2. **Explanation:** Why is this claim accurate or inaccurate?\n3. **Correction (if needed):** What is the accurate version?\n4. **Fiction Latitude:** How much does this matter for fiction? Can it be kept for narrative purposes?\n5. **Sources:** Where can this be verified?\n\n⚠️ This is an AI assessment — verify with authoritative sources for publication.`;
+    if (!input.claim) return messages.factCheckClaimRequired;
+    return messages.factCheckRequest({
+      claim: input.claim,
+      domain: input.domain ?? "general",
+      context: input.context,
+    });
   }
 
-  return "Unknown action.";
+  return messages.unknownAction;
 }

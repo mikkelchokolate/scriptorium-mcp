@@ -1,26 +1,49 @@
 import fs from "fs-extra";
 import path from "path";
 
+import { DEFAULT_LOCALE, type LocaleCode } from "../core/i18n/locales.js";
+import { getMcpMessages } from "../core/i18n/mcp/index.js";
+import { resolveRequestLocale, t, type LocalizedEntry, type MessageParams } from "../core/i18n/runtime.js";
+
+type ErrorSuggestion = string | LocalizedEntry;
+
 /**
- * 🏛️ Scriptorium Centralized Error Handling & Logging
- * 
- * Per Phase 0 of IMPROVEMENTS.md: All tools now use withErrorHandling wrapper.
- * Structured errors, Winston-like console logging with medieval flavor, input sanitization.
- * Prevents crashes, provides actionable suggestions, and logs to project-specific audit.log.
- * Race conditions mitigated by atomic writes where possible.
- * 
- * This file establishes the foundation for robustness across the medieval scriptorium.
+ * Scriptorium centralized error handling and logging.
+ *
+ * All MCP tools pass through withErrorHandling so validation, logging, and
+ * end-user responses stay consistent across locales.
  */
 
 export class ScriptoriumError extends Error {
+  public readonly localizedMessage?: LocalizedEntry;
+  public readonly suggestions: string[];
+  public readonly messageParams: MessageParams;
+  private readonly suggestionEntries: ErrorSuggestion[];
+
   constructor(
-    message: string, 
+    message: string | LocalizedEntry,
     public code: string = "SCRIPTORIUM_ERROR",
-    public suggestions: string[] = [],
-    public context?: Record<string, any>
+    suggestions: ErrorSuggestion[] = [],
+    public context?: Record<string, any>,
+    params: MessageParams = {},
   ) {
-    super(message);
+    const localizedMessage = typeof message === "string" ? undefined : message;
+    const englishMessage = typeof message === "string" ? message : t(DEFAULT_LOCALE, message, params);
+
+    super(englishMessage);
     this.name = "ScriptoriumError";
+    this.localizedMessage = localizedMessage;
+    this.messageParams = params;
+    this.suggestionEntries = suggestions;
+    this.suggestions = suggestions.map((entry) => typeof entry === "string" ? entry : t(DEFAULT_LOCALE, entry, params));
+  }
+
+  public resolveMessage(locale: LocaleCode): string {
+    return this.localizedMessage ? t(locale, this.localizedMessage, this.messageParams) : this.message;
+  }
+
+  public resolveSuggestions(locale: LocaleCode): string[] {
+    return this.suggestionEntries.map((entry) => typeof entry === "string" ? entry : t(locale, entry, this.messageParams));
   }
 }
 
@@ -36,89 +59,88 @@ export interface OperationLog {
 
 const LOG_FILE = path.join(process.cwd(), "scriptorium-audit.log");
 
-/**
- * Log operation with medieval scribe aesthetic for traceability.
- */
 export function logOperation(tool: string, action: string, details: Record<string, any> = {}): void {
   const entry: OperationLog = {
     timestamp: new Date().toISOString(),
     tool,
     action,
     status: "success",
-    ...details
+    ...details,
   };
-  
-  const logLine = `[${entry.timestamp}] 🪶 ${tool.toUpperCase()} | ${action} | ${JSON.stringify(details)}\n`;
-  
-  console.error(logLine.trim()); // MCP uses stderr for logs
-  
-  // Append to persistent audit log (non-blocking)
-  fs.appendFile(LOG_FILE, logLine, "utf-8").catch(() => {}); // Silent if fails
+
+  const logLine = `[${entry.timestamp}] ${tool.toUpperCase()} | ${action} | ${JSON.stringify(details)}\n`;
+
+  console.error(logLine.trim());
+  fs.appendFile(LOG_FILE, logLine, "utf-8").catch(() => {});
 }
 
-/**
- * Wrapper for all tool functions to ensure centralized error handling, validation, and logging.
- * Fixes race conditions by ensuring async/await is respected and errors don't crash server.
- * Removes 'any' by using proper generics and Zod-validated inputs.
- */
 export function withErrorHandling<T extends (...args: any[]) => Promise<string>>(
-  fn: T, 
-  toolName: string
+  fn: T,
+  toolName: string,
 ): T {
   return (async (...args: Parameters<T>): Promise<string> => {
     const start = Date.now();
-    const [input, projectsRoot] = args;
-    
+    const [input] = args;
+    const locale = resolveRequestLocale(input as { locale?: string } | undefined);
+    const messages = getMcpMessages(locale);
+
     try {
-      // Basic input sanitization (prevent path traversal etc.)
       if (input && typeof input === "object" && "project" in input) {
-        const proj = input.project as string;
-        if (!/^[a-zA-Z0-9_-]+$/.test(proj)) {
+        const project = input.project as string;
+        if (!/^[a-zA-Z0-9_-]+$/.test(project)) {
           throw new ScriptoriumError(
-            "Invalid project name. Use only letters, numbers, underscores, hyphens.", 
+            messages.errorHandler.invalidProjectName,
             "VALIDATION_ERROR",
-            ["Use alphanumeric project names like 'eldoria_chronicles'"]
+            [messages.errorHandler.invalidProjectNameSuggestion],
           );
         }
       }
-      
+
       const result = await fn(...args);
       const duration = Date.now() - start;
-      logOperation(toolName, input?.action || "unknown", { 
-        project: input?.project, 
+      logOperation(toolName, input?.action || "unknown", {
+        project: input?.project,
         durationMs: duration,
-        status: "success" 
+        status: "success",
       });
       return result;
     } catch (err: unknown) {
-      const error = err instanceof ScriptoriumError ? err : new ScriptoriumError(
-        err instanceof Error ? err.message : "Unknown error in scriptorium",
-        "INTERNAL_ERROR",
-        ["Check project structure with project_manager", "Verify facts with lore_guardian list_facts", "Consult the Living World Bible resource"]
-      );
-      
+      const error = err instanceof ScriptoriumError
+        ? err
+        : new ScriptoriumError(
+          err instanceof Error ? err.message : "Unknown error in Scriptorium.",
+          "INTERNAL_ERROR",
+          [
+            messages.errorHandler.inspectProjectSuggestion,
+            messages.errorHandler.verifyFactsSuggestion,
+            messages.errorHandler.inspectWorldBibleSuggestion,
+          ],
+        );
+
       const duration = Date.now() - start;
-      logOperation(toolName, input?.action || "unknown", { 
-        project: input?.project, 
+      logOperation(toolName, input?.action || "unknown", {
+        project: input?.project,
         durationMs: duration,
         status: "error",
         error: error.message,
-        code: error.code
+        code: error.code,
       });
-      
-      // Return user-friendly medieval flavored response instead of crashing
-      let response = `❌ **Scribe's Error** (${error.code}): ${error.message}\n\n`;
-      if (error.suggestions.length > 0) {
-        response += `**Suggestions from the Archivist:**\n${error.suggestions.map(s => `• ${s}`).join("\n")}\n\n`;
+
+      const message = error.resolveMessage(locale);
+      const suggestions = error.resolveSuggestions(locale);
+      let response = messages.errorHandler.responseHeading({ code: error.code, message });
+
+      if (suggestions.length > 0) {
+        response += `\n\n${messages.errorHandler.suggestionsHeading}\n${suggestions.map((suggestion) => `- ${suggestion}`).join("\n")}`;
       }
-      response += `*The monks have logged this incident. The Living World Bible remains intact. Try again or use project_manager info to diagnose.*`;
-      
+
+      response += `\n\n${messages.errorHandler.auditTrailFooter}`;
+
       return response;
     }
   }) as T;
 }
 
-// Initial log on module load
 fs.ensureDir(path.dirname(LOG_FILE)).then(() => {
-  logOperation("error_handler", "initialized", { version: "Phase0-stable" });
+  logOperation("error_handler", "initialized", { version: "locale-aware" });
 }).catch(() => {});

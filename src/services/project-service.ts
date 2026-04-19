@@ -1,8 +1,19 @@
 import fs from "fs-extra";
 import path from "path";
 import { randomUUID } from "crypto";
-import { ScriptoriumError, logOperation } from "../utils/error-handler.js";
+
 import type { LoreFact, ProjectMeta } from "../core/domain/entities.js";
+import { getMcpMessages, mcpEntry } from "../core/i18n/mcp/index.js";
+import { ScriptoriumError, logOperation } from "../utils/error-handler.js";
+
+interface MarkdownDocumentOptions {
+  documentTitle?: string;
+}
+
+function defaultWorldBibleHeading(project: string, options: MarkdownDocumentOptions = {}): string {
+  const title = options.documentTitle ?? getMcpMessages().projectService.defaultWorldBibleTitle;
+  return `# ${title} - ${project}\n\n`;
+}
 
 export class ProjectService {
   private readonly projectsRoot: string;
@@ -20,7 +31,10 @@ export class ProjectService {
       await fs.move(tmpPath, filePath, { overwrite: true });
     } catch (err) {
       await fs.remove(tmpPath).catch(() => {});
-      throw new ScriptoriumError(`Atomic write failed for ${filePath}: ${String(err)}`, "IO_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((messages) => messages.projectService.atomicWriteFailed(filePath, String(err))),
+        "IO_ERROR",
+      );
     }
   }
 
@@ -32,7 +46,10 @@ export class ProjectService {
       await fs.move(tmpPath, filePath, { overwrite: true });
     } catch (err) {
       await fs.remove(tmpPath).catch(() => {});
-      throw new ScriptoriumError(`Atomic write failed for ${filePath}: ${String(err)}`, "IO_ERROR");
+      throw new ScriptoriumError(
+        mcpEntry((messages) => messages.projectService.atomicWriteFailed(filePath, String(err))),
+        "IO_ERROR",
+      );
     }
   }
 
@@ -79,7 +96,7 @@ export class ProjectService {
   public async getProjectMeta(project: string): Promise<ProjectMeta> {
     const metaPath = path.join(this.projectDir(project), "project.json");
     if (!await fs.pathExists(metaPath)) {
-      throw new ScriptoriumError(`Project "${project}" not found`, "NOT_FOUND");
+      throw new ScriptoriumError(mcpEntry((messages) => messages.projectService.projectNotFound(project)), "NOT_FOUND");
     }
     return fs.readJson(metaPath) as Promise<ProjectMeta>;
   }
@@ -162,18 +179,23 @@ export class ProjectService {
     });
   }
 
-  public async appendToWorldBible(project: string, section: string): Promise<void> {
+  public async appendToWorldBible(project: string, section: string, options: MarkdownDocumentOptions = {}): Promise<void> {
     await this.withLock(`bible:${project}`, async () => {
-      const existing = await this.readWorldBible(project) ?? `# World Bible — ${project}\n\n`;
+      const existing = await this.readWorldBible(project) ?? defaultWorldBibleHeading(project, options);
       const next = existing.endsWith("\n") ? `${existing}${section}\n` : `${existing}\n${section}\n`;
       await this.writeMarkdownAtomic(this.getWorldBiblePath(project), next);
       await this.removeLegacyLivingBible(project);
     });
   }
 
-  public async appendToMarkdownSection(project: string, header: string, entry: string): Promise<void> {
+  public async appendToMarkdownSection(
+    project: string,
+    header: string,
+    entry: string,
+    options: MarkdownDocumentOptions = {},
+  ): Promise<void> {
     await this.withLock(`bible:${project}`, async () => {
-      const existing = await this.readWorldBible(project) ?? `# World Bible — ${project}\n\n${header}\n`;
+      const existing = await this.readWorldBible(project) ?? `${defaultWorldBibleHeading(project, options)}${header}\n`;
       const escapedHeader = header.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const sectionRegex = new RegExp(`(^${escapedHeader}\\n)([\\s\\S]*?)(?=^##\\s|$)`, "m");
       const match = existing.match(sectionRegex);
