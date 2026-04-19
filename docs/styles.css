@@ -970,9 +970,12 @@ p {
 }
 
 .runtime-card {
-  background: var(--ink-panel);
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #f4ecde;
+  background:
+    radial-gradient(circle at top right, rgba(47, 111, 114, 0.08), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(175, 98, 48, 0.09), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 246, 0.96), rgba(243, 233, 217, 0.94));
+  border-color: rgba(86, 61, 37, 0.14);
+  color: var(--ink);
 }
 
 .runtime-card .eyebrow,
@@ -982,16 +985,17 @@ p {
 }
 
 .runtime-card .eyebrow {
-  color: #9bd1d1;
+  color: var(--teal);
 }
 
 .code-block {
   margin: 0;
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #efe4d2;
+  border: 1px solid rgba(86, 61, 37, 0.12);
+  background: rgba(255, 251, 246, 0.88);
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
   overflow: auto;
   font-family: var(--font-mono);
   font-size: 0.83rem;
@@ -1019,18 +1023,18 @@ p {
   gap: 6px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(86, 61, 37, 0.1);
+  background: rgba(255, 251, 246, 0.72);
 }
 
 .endpoint-card strong {
   font-family: var(--font-mono);
   font-size: 0.82rem;
-  color: #f4ecde;
+  color: var(--ink);
 }
 
 .endpoint-card span {
-  color: rgba(244, 236, 222, 0.76);
+  color: var(--ink-soft);
   font-size: 0.84rem;
 }
 
